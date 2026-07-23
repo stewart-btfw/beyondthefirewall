@@ -1,11 +1,102 @@
 <!DOCTYPE html>
+<!--
+  beyondthefirewall.me — placeholder
+  Self-contained. No external requests. Rename to index.html.
+-->
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Beyond the Firewall</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beyond the Firewall</title>
+<meta name="description" content="Notes on network security and secure access. Coming soon.">
+<meta name="color-scheme" content="light">
+<style>
+:root {
+  --paper:  #E7EAEE;
+  --ink:    #0D1420;
+  --muted:  #5A6472;
+  --rule:   #C3CBD4;
+  --permit: #0F766E;
+  --mono:   ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+main { width: 100%; max-width: 30rem; }
+
+.status {
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1.75rem;
+}
+
+.status .dot {
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  background: var(--permit);
+  border-radius: 50%;
+  margin-right: 0.65em;
+  vertical-align: 0.08em;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 6vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 1.75rem;
+}
+
+h1 .dim { color: var(--muted); }
+
+.waiting {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 1.75rem;
+  border: 1px solid var(--rule);
+  filter: grayscale(1) contrast(1.05);
+}
+
+.foot {
+  margin: 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+</style>
 </head>
 <body>
-  <h1>Hello</h1>
+<main>
+  <p class="status"><span class="dot"></span>Server up</p>
+
+  <h1>Beyond the<br><span class="dim">Firewall</span></h1>
+
+  <img class="waiting" src="waiting.gif"
+       width="500" height="330"
+       alt="A small boy resting his chin on his hand, waiting impatiently.">
+
+  <p class="foot">Check back shortly.</p>
+</main>
 </body>
 </html>
