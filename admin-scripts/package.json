@@ -1,0 +1,14 @@
+{
+  "name": "beyondthefirewall-admin-scripts",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "invite": "node invite-users.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.1.0"
+  }
+}

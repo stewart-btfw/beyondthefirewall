@@ -1,0 +1,22 @@
+{
+  "name": "beyondthefirewall-members-backend",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "esbuild public/login.js --bundle --outfile=public/dist/login.bundle.js --format=esm --target=es2020",
+    "start": "node server.js",
+    "dev": "npm run build && node server.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0",
+    "firebase": "^10.12.0"
+  }
+}
