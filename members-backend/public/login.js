@@ -3,10 +3,8 @@ import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 // Firebase web config is not secret (it's a public client identifier gated by
 // Firebase Auth + the referrer restriction on the API key, not by secrecy).
-// Fill these in from Firebase console > Project settings > General > Your apps > Web app,
-// after Stage 1 (Firebase console setup) is done.
 const firebaseConfig = {
-  apiKey: 'REPLACE_WITH_FIREBASE_WEB_API_KEY',
+  apiKey: 'AIzaSyBe0jlBRU3Q_UsAR2carLRidwh2rEll_Io',
   authDomain: 'beyondthefirewall.firebaseapp.com',
   projectId: 'beyondthefirewall',
 };

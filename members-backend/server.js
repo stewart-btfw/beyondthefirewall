@@ -34,12 +34,13 @@ app.post('/members/session', async (req, res) => {
     res.cookie(COOKIE_NAME, sessionCookie, {
       maxAge: SESSION_EXPIRES_MS,
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/members/',
     });
     res.status(200).json({ status: 'ok' });
   } catch (err) {
+    console.error('session creation failed:', err);
     res.status(401).json({ error: 'invalid token' });
   }
 });
