@@ -6,8 +6,15 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const app = express();
+app.set('trust proxy', true); // nginx sets X-Forwarded-For to the real client IP
 app.use(express.json());
 app.use(cookieParser());
+
+// Login attempt audit log. Never logs the password or ID token itself —
+// only the outcome, so a compromised log can't leak credentials.
+function logLoginAttempt(fields) {
+  console.log(JSON.stringify({ type: 'login_attempt', time: new Date().toISOString(), ...fields }));
+}
 
 const COOKIE_NAME = '__session';
 const SESSION_EXPIRES_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
@@ -27,7 +34,7 @@ app.post('/members/session', async (req, res) => {
   }
 
   try {
-    await admin.auth().verifyIdToken(idToken);
+    const decoded = await admin.auth().verifyIdToken(idToken);
     const sessionCookie = await admin.auth().createSessionCookie(idToken, {
       expiresIn: SESSION_EXPIRES_MS,
     });
@@ -38,9 +45,11 @@ app.post('/members/session', async (req, res) => {
       sameSite: 'lax',
       path: '/members/',
     });
+    logLoginAttempt({ outcome: 'success', email: decoded.email, ip: req.ip });
     res.status(200).json({ status: 'ok' });
   } catch (err) {
     console.error('session creation failed:', err);
+    logLoginAttempt({ outcome: 'failure', reason: err.code || err.message, ip: req.ip });
     res.status(401).json({ error: 'invalid token' });
   }
 });
