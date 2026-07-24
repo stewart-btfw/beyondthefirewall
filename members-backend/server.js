@@ -10,9 +10,9 @@ app.set('trust proxy', true); // nginx sets X-Forwarded-For to the real client I
 app.use(express.json());
 app.use(cookieParser());
 
-// Login attempt audit log. Never logs the password or ID token itself —
+// Auth event audit log. Never logs the password or ID token itself —
 // only the outcome, so a compromised log can't leak credentials.
-function logLoginAttempt(fields) {
+function logAuthEvent(fields) {
   console.log(JSON.stringify({ type: 'login_attempt', time: new Date().toISOString(), ...fields }));
 }
 
@@ -45,11 +45,11 @@ app.post('/members/session', async (req, res) => {
       sameSite: 'lax',
       path: '/members/',
     });
-    logLoginAttempt({ outcome: 'success', email: decoded.email, ip: req.ip });
+    logAuthEvent({ outcome: 'success', email: decoded.email, ip: req.ip });
     res.status(200).json({ status: 'ok' });
   } catch (err) {
     console.error('session creation failed:', err);
-    logLoginAttempt({ outcome: 'failure', reason: err.code || err.message, ip: req.ip });
+    logAuthEvent({ outcome: 'failure', reason: err.code || err.message, ip: req.ip });
     res.status(401).json({ error: 'invalid token' });
   }
 });
@@ -57,6 +57,14 @@ app.post('/members/session', async (req, res) => {
 app.get('/members/logout', (req, res) => {
   res.clearCookie(COOKIE_NAME, { path: '/members/' });
   res.redirect('/members/login');
+});
+
+// Audit-only: the actual reset email is sent client-side via Firebase.
+// This just records that a reset was requested for this email.
+app.post('/members/forgot-password', (req, res) => {
+  const email = req.body && req.body.email;
+  logAuthEvent({ type: 'password_reset_requested', email, ip: req.ip });
+  res.status(200).json({ status: 'ok' });
 });
 
 // Everything else under /members/ requires a valid session cookie.

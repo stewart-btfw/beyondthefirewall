@@ -108,3 +108,27 @@ button:disabled {
   font-size: 0.8rem;
   color: var(--danger);
 }
+
+.info {
+  min-height: 1.2rem;
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: var(--permit);
+}
+
+.foot {
+  margin: 1.5rem 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.foot a {
+  color: var(--permit);
+  text-decoration: none;
+}
+
+.foot a:hover { text-decoration: underline; }
