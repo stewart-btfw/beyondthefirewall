@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "esbuild public/login.js --bundle --outfile=public/dist/login.bundle.js --format=esm --target=es2020",
+    "build": "esbuild public/login.js --bundle --outfile=public/dist/login.bundle.js --format=esm --target=es2020 && esbuild public/account.js --bundle --outfile=public/dist/account.bundle.js --format=esm --target=es2020 && esbuild public/admin.js --bundle --outfile=public/dist/admin.bundle.js --format=esm --target=es2020",
     "start": "node server.js",
     "dev": "npm run build && node server.js"
   },

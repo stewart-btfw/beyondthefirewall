@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beyond the Firewall — Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/members/admin.css">
+</head>
+<body>
+<main>
+  <p class="status"><span class="dot"></span>Admin</p>
+  <h1><a href="/"><img src="/btf-logo-lockup.svg" alt="Beyond the Firewall" width="252" height="64"></a></h1>
+
+  <form id="invite-form" novalidate>
+    <label for="invite-email">Invite by email</label>
+    <input type="email" id="invite-email" name="invite-email" required>
+    <button type="submit" id="invite-submit">Invite</button>
+  </form>
+
+  <p class="error" id="admin-error"></p>
+  <p class="info" id="admin-info"></p>
+
+  <table id="users-table">
+    <thead>
+      <tr><th>Email</th><th>Status</th><th>Created</th><th>Last sign-in</th><th></th></tr>
+    </thead>
+    <tbody id="users-tbody"></tbody>
+  </table>
+
+  <p class="foot"><a href="/members/account">My account</a> &middot; <a href="/members/">Members area</a> &middot; <a href="/members/logout">Log out</a></p>
+</main>
+<script type="module" src="/members/dist/admin.bundle.js"></script>
+</body>
+</html>

@@ -18,6 +18,10 @@ function logAuthEvent(fields) {
 
 const COOKIE_NAME = '__session';
 const SESSION_EXPIRES_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const GATED_DIR = path.join(__dirname, 'gated-content');
@@ -82,6 +86,96 @@ async function requireSession(req, res, next) {
     res.redirect(`/members/login?next=${encodeURIComponent(req.originalUrl)}`);
   }
 }
+
+function requireAdmin(req, res, next) {
+  const email = (req.user && req.user.email || '').toLowerCase();
+  if (!ADMIN_EMAILS.includes(email)) {
+    return res.status(403).send('Forbidden');
+  }
+  next();
+}
+
+// Account page: change your own password. The change itself happens
+// client-side via Firebase after a fresh re-authentication; this endpoint
+// only audit-logs that it happened.
+app.get('/members/account', requireSession, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.html')));
+app.get('/members/account.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.css'), { maxAge: '1d' }));
+app.get('/members/whoami', requireSession, (req, res) => res.status(200).json({ email: req.user.email }));
+app.post('/members/account/password-changed', requireSession, (req, res) => {
+  logAuthEvent({ type: 'password_changed', email: req.user.email, ip: req.ip });
+  res.status(200).json({ status: 'ok' });
+});
+
+// Admin: invite new users and enable/disable existing ones. Gated by
+// ADMIN_EMAILS (set via the Cloud Run service's env vars), not a Firebase
+// custom claim — simpler to reason about at this scale (a handful of admins).
+app.get('/members/admin', requireSession, requireAdmin, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
+app.get('/members/admin.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.css'), { maxAge: '1d' }));
+
+app.get('/members/admin/users', requireSession, requireAdmin, async (req, res) => {
+  try {
+    const list = await admin.auth().listUsers(1000);
+    const users = list.users
+      .map((u) => ({
+        uid: u.uid,
+        email: u.email,
+        disabled: u.disabled,
+        creationTime: u.metadata.creationTime,
+        lastSignInTime: u.metadata.lastSignInTime,
+      }))
+      .sort((a, b) => (a.email || '').localeCompare(b.email || ''));
+    res.status(200).json({ users });
+  } catch (err) {
+    console.error('list users failed:', err);
+    res.status(500).json({ error: 'could not list users' });
+  }
+});
+
+app.post('/members/admin/invite', requireSession, requireAdmin, async (req, res) => {
+  const email = req.body && req.body.email;
+  if (!email) {
+    return res.status(400).json({ error: 'missing email' });
+  }
+
+  try {
+    const existing = await admin.auth().getUserByEmail(email).catch((err) => {
+      if (err.code === 'auth/user-not-found') return null;
+      throw err;
+    });
+
+    if (existing) {
+      logAuthEvent({ type: 'admin_invite', outcome: 'already_exists', email, by: req.user.email, ip: req.ip });
+      return res.status(200).json({ alreadyExisted: true });
+    }
+
+    await admin.auth().createUser({ email, emailVerified: true, disabled: false });
+    const resetLink = await admin.auth().generatePasswordResetLink(email);
+    logAuthEvent({ type: 'admin_invite', outcome: 'created', email, by: req.user.email, ip: req.ip });
+    res.status(200).json({ alreadyExisted: false, resetLink });
+  } catch (err) {
+    console.error('admin invite failed:', err);
+    res.status(500).json({ error: 'invite failed' });
+  }
+});
+
+app.post('/members/admin/toggle-disabled', requireSession, requireAdmin, async (req, res) => {
+  const { uid, disabled } = req.body || {};
+  if (!uid || typeof disabled !== 'boolean') {
+    return res.status(400).json({ error: 'missing uid/disabled' });
+  }
+  if (uid === req.user.uid && disabled) {
+    return res.status(400).json({ error: 'cannot disable your own account' });
+  }
+
+  try {
+    await admin.auth().updateUser(uid, { disabled });
+    logAuthEvent({ type: 'admin_toggle_disabled', uid, disabled, by: req.user.email, ip: req.ip });
+    res.status(200).json({ status: 'ok' });
+  } catch (err) {
+    console.error('toggle disabled failed:', err);
+    res.status(500).json({ error: 'could not update user' });
+  }
+});
 
 app.use('/members/', requireSession, express.static(GATED_DIR, { index: 'index.html', extensions: ['html'] }));
 
