@@ -4,7 +4,7 @@ fetch('/members/whoami')
     if (data.displayName) {
       const greetingEl = document.getElementById('greeting');
       if (greetingEl) {
-        greetingEl.textContent = `You're signed in, ${data.displayName}.`;
+        greetingEl.textContent = `You're signed in ${data.displayName}.`;
       }
     }
     const whoamiEl = document.getElementById('whoami');
