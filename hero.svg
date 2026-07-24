@@ -3,23 +3,12 @@
 
   <style>
     svg {
-      --btf-bg:     #FFFFFF;
-      --btf-ink:    #24394A;
-      --btf-edge:   #A9B6C0;
-      --btf-faint:  #C3CDD5;
-      --btf-rim:    #8FA0AD;
-      --btf-accent: #157A6E;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      svg {
-        --btf-bg:     #0E161C;
-        --btf-ink:    #D6E2EA;
-        --btf-edge:   #3C4E5C;
-        --btf-faint:  #2B3945;
-        --btf-rim:    #63788A;
-        --btf-accent: #35BFA8;
-      }
+      --btf-bg:     #0E161C;
+      --btf-ink:    #D6E2EA;
+      --btf-edge:   #3C4E5C;
+      --btf-faint:  #2B3945;
+      --btf-rim:    #63788A;
+      --btf-accent: #35BFA8;
     }
 
     .edge      { stroke: var(--btf-edge); stroke-width: 1.2; fill: none; }

@@ -1,4 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#0D1117"/>
-  <circle cx="16" cy="16" r="6" fill="#2DD4BF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Beyond the Firewall">
+  <title>Beyond the Firewall</title>
+
+  <style>
+    svg {
+      --btf-ink:    #D6E2EA;
+      --btf-accent: #35BFA8;
+    }
+    .perimeter { fill: none; stroke: var(--btf-ink); stroke-width: 4; stroke-linecap: round; }
+    .core      { fill: var(--btf-ink); }
+    .path      { fill: none; stroke: var(--btf-accent); stroke-width: 4; stroke-linecap: round; }
+    .beyond    { fill: var(--btf-accent); }
+  </style>
+
+  <!-- the perimeter, open on one side -->
+  <path class="perimeter" d="M40.18 43.08 A18 18 0 1 1 40.18 20.92"/>
+
+  <!-- what sits inside it -->
+  <circle class="core" cx="26" cy="32" r="5"/>
+
+  <!-- the way out, and what's past it -->
+  <path class="path" d="M33 32 L50 32"/>
+  <circle class="beyond" cx="58" cy="32" r="3.5"/>
 </svg>

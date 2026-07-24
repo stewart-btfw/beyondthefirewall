@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 252 64" width="252" height="64" role="img" aria-label="Beyond the Firewall">
+  <title>Beyond the Firewall</title>
+
+  <style>
+    svg {
+      --btf-ink:    #D6E2EA;
+      --btf-accent: #35BFA8;
+      --btf-muted:  #8FA4B3;
+    }
+    .perimeter { fill: none; stroke: var(--btf-ink); stroke-width: 4; stroke-linecap: round; }
+    .core      { fill: var(--btf-ink); }
+    .path      { fill: none; stroke: var(--btf-accent); stroke-width: 4; stroke-linecap: round; }
+    .beyond    { fill: var(--btf-accent); }
+
+    .wordmark, .tagmark {
+      font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    .wordmark {
+      font-size: 26px; font-weight: 600; letter-spacing: 1.2px;
+      fill: var(--btf-ink);
+    }
+    .tagmark {
+      font-size: 12.5px; font-weight: 500; letter-spacing: 4.4px;
+      fill: var(--btf-muted);
+    }
+  </style>
+
+  <!-- mark -->
+  <g>
+    <path class="perimeter" d="M40.18 43.08 A18 18 0 1 1 40.18 20.92"/>
+    <circle class="core" cx="26" cy="32" r="5"/>
+    <path class="path" d="M33 32 L50 32"/>
+    <circle class="beyond" cx="58" cy="32" r="3.5"/>
+  </g>
+
+  <!-- wordmark -->
+  <text class="wordmark" x="84" y="31">BEYOND</text>
+  <text class="tagmark" x="86" y="49">THE FIREWALL</text>
+</svg>
