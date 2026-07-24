@@ -23,9 +23,10 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 const GATED_DIR = path.join(__dirname, 'gated-content');
 
 // Login page and its assets (login.html, login.css, dist/login.bundle.js) are always public.
+// The HTML itself stays uncached; the CSS/JS behind it rarely change once published.
 app.get('/members/login', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.html')));
-app.get('/members/login.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.css')));
-app.use('/members/dist', express.static(path.join(PUBLIC_DIR, 'dist')));
+app.get('/members/login.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.css'), { maxAge: '1d' }));
+app.use('/members/dist', express.static(path.join(PUBLIC_DIR, 'dist'), { maxAge: '1d' }));
 
 app.post('/members/session', async (req, res) => {
   const idToken = req.body && req.body.idToken;
