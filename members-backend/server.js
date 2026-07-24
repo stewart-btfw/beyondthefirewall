@@ -110,14 +110,41 @@ function requireAdmin(req, res, next) {
 // which is where this gets audit-logged — see there for why.
 app.get('/members/account', requireSession, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.html')));
 app.get('/members/account.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.css'), { maxAge: '1d' }));
-app.get('/members/whoami', requireSession, (req, res) => {
+app.get('/members/whoami', requireSession, async (req, res) => {
   const email = (req.user.email || '');
+  // Looked up fresh (not read off the session cookie's cached claims) so a
+  // just-changed display name shows immediately, without needing a re-login.
+  let displayName = null;
+  try {
+    const userRecord = await admin.auth().getUser(req.user.uid);
+    displayName = userRecord.displayName || null;
+  } catch (err) {
+    console.error('whoami: could not look up display name:', err);
+  }
   res.status(200).json({
     email,
     uid: req.user.uid,
     ip: req.ip,
+    displayName,
     isAdmin: ADMIN_EMAILS.includes(email.toLowerCase()),
   });
+});
+
+app.post('/members/account/display-name', requireSession, async (req, res) => {
+  const raw = req.body && req.body.displayName;
+  if (typeof raw !== 'string') {
+    return res.status(400).json({ error: 'missing displayName' });
+  }
+  const displayName = raw.trim().slice(0, 100);
+
+  try {
+    await admin.auth().updateUser(req.user.uid, { displayName: displayName || null });
+    logAuthEvent({ type: 'display_name_changed', email: req.user.email, ip: req.ip });
+    res.status(200).json({ status: 'ok', displayName: displayName || null });
+  } catch (err) {
+    console.error('display name update failed:', err);
+    res.status(500).json({ error: 'could not update display name' });
+  }
 });
 
 // Admin: invite new users and enable/disable existing ones. Gated by

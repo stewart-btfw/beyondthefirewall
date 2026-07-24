@@ -18,6 +18,12 @@ const errorEl = document.getElementById('account-error');
 const infoEl = document.getElementById('account-info');
 const submitBtn = document.getElementById('account-submit');
 
+const nameForm = document.getElementById('displayname-form');
+const nameInput = document.getElementById('display-name');
+const nameErrorEl = document.getElementById('displayname-error');
+const nameInfoEl = document.getElementById('displayname-info');
+const nameSubmitBtn = document.getElementById('displayname-submit');
+
 let currentEmail = '';
 
 fetch('/members/whoami')
@@ -25,8 +31,30 @@ fetch('/members/whoami')
   .then((data) => {
     currentEmail = data.email || '';
     whoamiEl.textContent = currentEmail ? `Signed in as ${currentEmail}` : '';
+    nameInput.value = data.displayName || '';
   })
   .catch(() => {});
+
+nameForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  nameErrorEl.textContent = '';
+  nameInfoEl.textContent = '';
+
+  nameSubmitBtn.disabled = true;
+  try {
+    const res = await fetch('/members/account/display-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName: nameInput.value }),
+    });
+    if (!res.ok) throw new Error('failed');
+    nameInfoEl.textContent = 'Name saved.';
+  } catch (err) {
+    nameErrorEl.textContent = 'Could not save name. Try again.';
+  } finally {
+    nameSubmitBtn.disabled = false;
+  }
+});
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
