@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="1200" height="420" role="img" aria-label="An abstract network of nodes on the left, connected through a dashed boundary to a sparser network on the right.">
+  <title>Beyond the Firewall</title>
+
+  <style>
+    svg {
+      --btf-bg:     #FFFFFF;
+      --btf-ink:    #24394A;
+      --btf-edge:   #A9B6C0;
+      --btf-faint:  #C3CDD5;
+      --btf-rim:    #8FA0AD;
+      --btf-accent: #157A6E;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      svg {
+        --btf-bg:     #0E161C;
+        --btf-ink:    #D6E2EA;
+        --btf-edge:   #3C4E5C;
+        --btf-faint:  #2B3945;
+        --btf-rim:    #63788A;
+        --btf-accent: #35BFA8;
+      }
+    }
+
+    .edge      { stroke: var(--btf-edge); stroke-width: 1.2; fill: none; }
+    .edge-out  { stroke: var(--btf-faint); stroke-width: 1.1; fill: none; }
+    .cross     { stroke: var(--btf-accent); stroke-width: 1.6; fill: none; }
+    .node      { fill: var(--btf-ink); }
+    .node-out  { fill: var(--btf-bg); stroke: var(--btf-rim); stroke-width: 1.4; }
+    .gate      { fill: var(--btf-accent); }
+    .gate-ring { fill: none; stroke: var(--btf-accent); stroke-width: 1.4; opacity: .45; }
+    .boundary  { stroke: var(--btf-ink); stroke-width: 1.4; stroke-dasharray: 3 9; opacity: .55; }
+    .tick      { fill: var(--btf-accent); }
+    .pulse     { fill: var(--btf-accent); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pulse { display: none; }
+    }
+  </style>
+
+  <!-- inside the perimeter -->
+  <g class="edge">
+    <path d="M90 210 L160 120 M90 210 L150 300 M90 210 L240 190
+             M160 120 L240 190 M160 120 L230 60
+             M150 300 L240 190 M150 300 L250 350
+             M240 190 L330 130 M240 190 L340 270
+             M230 60 L330 130 M250 350 L340 270
+             M330 130 L420 200 M330 130 L430 90
+             M340 270 L420 200 M340 270 L440 320
+             M420 200 L500 160 M420 200 L505 260
+             M430 90 L500 160 M440 320 L505 260"/>
+  </g>
+
+  <!-- beyond the perimeter -->
+  <g class="edge-out">
+    <path d="M680 120 L760 210 M680 120 L850 80
+             M700 300 L760 210 M700 300 L870 250
+             M760 210 L870 250
+             M850 80 L960 160 M870 250 L960 160 M870 250 L1000 330
+             M960 160 L1080 220 M960 160 L1120 100
+             M1000 330 L1080 220 M1080 220 L1120 100"/>
+  </g>
+
+  <!-- the boundary -->
+  <line class="boundary" x1="560" y1="40" x2="560" y2="380"/>
+
+  <!-- controlled crossings -->
+  <g class="cross">
+    <path d="M500 160 L680 120"/>
+    <path d="M500 160 L760 210"/>
+    <path d="M505 260 L700 300"/>
+    <path d="M505 260 L760 210"/>
+  </g>
+
+  <!-- inspection points -->
+  <g class="tick">
+    <rect x="557" y="144" width="6" height="6" rx="1"/>
+    <rect x="557" y="168" width="6" height="6" rx="1"/>
+    <rect x="557" y="246" width="6" height="6" rx="1"/>
+    <rect x="557" y="268" width="6" height="6" rx="1"/>
+  </g>
+
+  <!-- nodes -->
+  <g class="node">
+    <circle cx="90" cy="210" r="7"/>
+    <circle cx="160" cy="120" r="5"/>
+    <circle cx="150" cy="300" r="5"/>
+    <circle cx="240" cy="190" r="6"/>
+    <circle cx="230" cy="60" r="4.5"/>
+    <circle cx="250" cy="350" r="4.5"/>
+    <circle cx="330" cy="130" r="5"/>
+    <circle cx="340" cy="270" r="5"/>
+    <circle cx="420" cy="200" r="6"/>
+    <circle cx="430" cy="90" r="4.5"/>
+    <circle cx="440" cy="320" r="4.5"/>
+  </g>
+
+  <g class="gate">
+    <circle cx="500" cy="160" r="6"/>
+    <circle cx="505" cy="260" r="6"/>
+  </g>
+  <g class="gate-ring">
+    <circle cx="500" cy="160" r="12"/>
+    <circle cx="505" cy="260" r="12"/>
+  </g>
+
+  <g class="node-out">
+    <circle cx="680" cy="120" r="5"/>
+    <circle cx="700" cy="300" r="5"/>
+    <circle cx="760" cy="210" r="6"/>
+    <circle cx="850" cy="80" r="4.5"/>
+    <circle cx="870" cy="250" r="5"/>
+    <circle cx="960" cy="160" r="6"/>
+    <circle cx="1000" cy="330" r="4.5"/>
+    <circle cx="1080" cy="220" r="5"/>
+    <circle cx="1120" cy="100" r="4.5"/>
+  </g>
+
+  <!-- a single packet, crossing -->
+  <circle class="pulse" r="3.5" opacity="0">
+    <animateMotion dur="4.5s" repeatCount="indefinite"
+                   path="M500 160 L680 120" keyPoints="0;1" keyTimes="0;1" calcMode="linear"/>
+    <animate attributeName="opacity" dur="4.5s" repeatCount="indefinite"
+             values="0;1;1;0;0" keyTimes="0;0.1;0.6;0.75;1"/>
+  </circle>
+  <circle class="pulse" r="3.5" opacity="0">
+    <animateMotion dur="6s" begin="2s" repeatCount="indefinite"
+                   path="M505 260 L760 210" keyPoints="0;1" keyTimes="0;1" calcMode="linear"/>
+    <animate attributeName="opacity" dur="6s" begin="2s" repeatCount="indefinite"
+             values="0;1;1;0;0" keyTimes="0;0.1;0.6;0.75;1"/>
+  </circle>
+</svg>
