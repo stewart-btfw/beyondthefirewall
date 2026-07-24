@@ -110,7 +110,10 @@ function requireAdmin(req, res, next) {
 // which is where this gets audit-logged — see there for why.
 app.get('/members/account', requireSession, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.html')));
 app.get('/members/account.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.css'), { maxAge: '1d' }));
-app.get('/members/whoami', requireSession, (req, res) => res.status(200).json({ email: req.user.email }));
+app.get('/members/whoami', requireSession, (req, res) => {
+  const email = (req.user.email || '');
+  res.status(200).json({ email, isAdmin: ADMIN_EMAILS.includes(email.toLowerCase()) });
+});
 
 // Admin: invite new users and enable/disable existing ones. Gated by
 // ADMIN_EMAILS (set via the Cloud Run service's env vars), not a Firebase
