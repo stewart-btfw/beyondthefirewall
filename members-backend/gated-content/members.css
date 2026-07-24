@@ -60,6 +60,15 @@ p {
   margin: 0 0 1.75rem;
 }
 
+.waiting {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 1.75rem;
+  border: 1px solid var(--rule);
+  filter: grayscale(1) contrast(1.05);
+}
+
 .whoami {
   font-size: 0.75rem;
   color: var(--muted);
