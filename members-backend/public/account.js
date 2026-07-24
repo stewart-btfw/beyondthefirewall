@@ -55,9 +55,11 @@ form.addEventListener('submit', async (event) => {
 
     // Changing the password bumps Firebase's revocation timestamp, which
     // invalidates our *current* session cookie too (not just other
-    // devices'). Reissue a fresh one from the still-valid client credential
-    // so the user isn't unexpectedly logged out right after this succeeds.
-    const idToken = await credential.user.getIdToken(true);
+    // devices'). A mere token refresh can still race with that timestamp,
+    // so sign in fresh with the new password to get a token unambiguously
+    // issued after it, and use that to reissue a valid session cookie.
+    const freshCredential = await signInWithEmailAndPassword(auth, currentEmail, newPassword);
+    const idToken = await freshCredential.user.getIdToken();
     await fetch('/members/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
