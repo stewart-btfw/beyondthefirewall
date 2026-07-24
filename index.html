@@ -13,6 +13,7 @@
 <meta name="color-scheme" content="dark">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="canonical" href="https://beyondthefirewall.me/">
+<link rel="stylesheet" href="style.css">
 <meta property="og:title" content="Beyond the Firewall">
 <meta property="og:description" content="Network security and secure access — because the firewall stopped being the interesting part a while ago.">
 <meta property="og:type" content="website">
@@ -22,90 +23,6 @@
 <meta name="twitter:title" content="Beyond the Firewall">
 <meta name="twitter:description" content="Network security and secure access — because the firewall stopped being the interesting part a while ago.">
 <meta name="twitter:image" content="https://beyondthefirewall.me/waiting.gif">
-<style>
-:root {
-  --paper:  #0D1117;
-  --ink:    #E6EDF3;
-  --muted:  #8B96A5;
-  --rule:   #2A313C;
-  --permit: #2DD4BF;
-  --mono:   ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-* { box-sizing: border-box; }
-
-img { max-width: 100%; height: auto; }
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1.5rem;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--mono);
-  -webkit-font-smoothing: antialiased;
-}
-
-main { width: 100%; max-width: 30rem; }
-
-.status {
-  font-size: 0.6875rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 0 0 1.75rem;
-}
-
-.status .dot {
-  display: inline-block;
-  width: 0.45em;
-  height: 0.45em;
-  background: var(--permit);
-  border-radius: 50%;
-  margin-right: 0.65em;
-  vertical-align: 0.08em;
-}
-
-h1 {
-  font-size: clamp(1.5rem, 6vw, 2.25rem);
-  font-weight: 500;
-  line-height: 1.25;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 1.75rem;
-}
-
-h1 .dim { color: var(--muted); }
-
-.waiting {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 0 0 1.75rem;
-  border: 1px solid var(--rule);
-  filter: grayscale(1) contrast(1.05);
-}
-
-.foot {
-  margin: 0;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--rule);
-  font-size: 0.75rem;
-  line-height: 1.7;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
-.foot a {
-  color: var(--permit);
-  text-decoration: none;
-}
-
-.foot a:hover { text-decoration: underline; }
-</style>
 </head>
 <body>
 <main>
