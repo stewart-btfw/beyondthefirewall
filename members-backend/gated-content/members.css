@@ -60,6 +60,12 @@ p {
   margin: 0 0 1.75rem;
 }
 
+.whoami {
+  font-size: 0.75rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+
 .foot {
   margin: 0;
   padding-top: 1.5rem;

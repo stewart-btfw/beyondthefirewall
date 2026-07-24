@@ -112,7 +112,12 @@ app.get('/members/account', requireSession, (req, res) => res.sendFile(path.join
 app.get('/members/account.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.css'), { maxAge: '1d' }));
 app.get('/members/whoami', requireSession, (req, res) => {
   const email = (req.user.email || '');
-  res.status(200).json({ email, isAdmin: ADMIN_EMAILS.includes(email.toLowerCase()) });
+  res.status(200).json({
+    email,
+    uid: req.user.uid,
+    ip: req.ip,
+    isAdmin: ADMIN_EMAILS.includes(email.toLowerCase()),
+  });
 });
 
 // Admin: invite new users and enable/disable existing ones. Gated by
