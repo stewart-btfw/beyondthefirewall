@@ -34,6 +34,10 @@ app.use('/members/dist', express.static(path.join(PUBLIC_DIR, 'dist'), { maxAge:
 
 app.post('/members/session', async (req, res) => {
   const idToken = req.body && req.body.idToken;
+  // Optional: 'password_changed' when this call is reissuing a session
+  // right after a password change, so the audit log reflects that instead
+  // of looking like an ordinary login.
+  const reason = req.body && req.body.reason;
   if (!idToken) {
     return res.status(400).json({ error: 'missing idToken' });
   }
@@ -50,7 +54,12 @@ app.post('/members/session', async (req, res) => {
       sameSite: 'lax',
       path: '/members/',
     });
-    logAuthEvent({ outcome: 'success', email: decoded.email, ip: req.ip });
+    logAuthEvent({
+      type: reason === 'password_changed' ? 'password_changed' : 'login_attempt',
+      outcome: 'success',
+      email: decoded.email,
+      ip: req.ip,
+    });
     res.status(200).json({ status: 'ok' });
   } catch (err) {
     console.error('session creation failed:', err);
@@ -96,15 +105,12 @@ function requireAdmin(req, res, next) {
 }
 
 // Account page: change your own password. The change itself happens
-// client-side via Firebase after a fresh re-authentication; this endpoint
-// only audit-logs that it happened.
+// client-side via Firebase after a fresh re-authentication, then the client
+// reissues its session via POST /members/session (reason: 'password_changed'),
+// which is where this gets audit-logged — see there for why.
 app.get('/members/account', requireSession, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.html')));
 app.get('/members/account.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.css'), { maxAge: '1d' }));
 app.get('/members/whoami', requireSession, (req, res) => res.status(200).json({ email: req.user.email }));
-app.post('/members/account/password-changed', requireSession, (req, res) => {
-  logAuthEvent({ type: 'password_changed', email: req.user.email, ip: req.ip });
-  res.status(200).json({ status: 'ok' });
-});
 
 // Admin: invite new users and enable/disable existing ones. Gated by
 // ADMIN_EMAILS (set via the Cloud Run service's env vars), not a Firebase

@@ -63,10 +63,8 @@ form.addEventListener('submit', async (event) => {
     await fetch('/members/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({ idToken, reason: 'password_changed' }),
     });
-
-    fetch('/members/account/password-changed', { method: 'POST' }).catch(() => {});
 
     form.reset();
     infoEl.textContent = 'Password changed.';
