@@ -218,7 +218,16 @@ app.post('/members/admin/toggle-disabled', requireSession, requireAdmin, async (
   }
 });
 
-app.use('/members/', requireSession, express.static(GATED_DIR, { index: 'index.html', extensions: ['html'] }));
+// no-store (not just a short/no maxAge) because Cloudflare overrides
+// unspecified/short Cache-Control for static-looking extensions with its
+// own multi-hour "Browser Cache TTL" default — no-store is the one
+// directive it won't override, which matters since this content is under
+// active iteration and is gated behind auth anyway (no shared-cache benefit).
+app.use('/members/', requireSession, express.static(GATED_DIR, {
+  index: 'index.html',
+  extensions: ['html'],
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
+}));
 
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
