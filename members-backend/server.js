@@ -26,11 +26,21 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const GATED_DIR = path.join(__dirname, 'gated-content');
 
-// Login page and its assets (login.html, login.css, dist/login.bundle.js) are always public.
-// The HTML itself stays uncached; the CSS/JS behind it rarely change once published.
+// Login page and its assets (login.html, login.css, dist/*.bundle.js) are
+// always public. no-store everywhere here: this app is under active
+// iteration, and Cloudflare overrides any weaker/absent Cache-Control on
+// static-looking extensions with its own multi-hour default, so a short or
+// missing maxAge doesn't actually protect against stale cached JS/CSS —
+// only no-store reliably does. Revisit with real caching (behind versioned
+// filenames) once these stop changing every day.
 app.get('/members/login', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.html')));
-app.get('/members/login.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.css'), { maxAge: '1d' }));
-app.use('/members/dist', express.static(path.join(PUBLIC_DIR, 'dist'), { maxAge: '1d' }));
+app.get('/members/login.css', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(PUBLIC_DIR, 'login.css'));
+});
+app.use('/members/dist', express.static(path.join(PUBLIC_DIR, 'dist'), {
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
+}));
 
 app.post('/members/session', async (req, res) => {
   const idToken = req.body && req.body.idToken;
@@ -109,7 +119,10 @@ function requireAdmin(req, res, next) {
 // reissues its session via POST /members/session (reason: 'password_changed'),
 // which is where this gets audit-logged — see there for why.
 app.get('/members/account', requireSession, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.html')));
-app.get('/members/account.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'account.css'), { maxAge: '1d' }));
+app.get('/members/account.css', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(PUBLIC_DIR, 'account.css'));
+});
 app.get('/members/whoami', requireSession, async (req, res) => {
   const email = (req.user.email || '');
   // Looked up fresh (not read off the session cookie's cached claims) so a
@@ -151,7 +164,10 @@ app.post('/members/account/display-name', requireSession, async (req, res) => {
 // ADMIN_EMAILS (set via the Cloud Run service's env vars), not a Firebase
 // custom claim — simpler to reason about at this scale (a handful of admins).
 app.get('/members/admin', requireSession, requireAdmin, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
-app.get('/members/admin.css', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.css'), { maxAge: '1d' }));
+app.get('/members/admin.css', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(PUBLIC_DIR, 'admin.css'));
+});
 
 app.get('/members/admin/users', requireSession, requireAdmin, async (req, res) => {
   try {
