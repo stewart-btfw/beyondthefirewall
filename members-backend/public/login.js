@@ -18,8 +18,7 @@ const infoEl = document.getElementById('login-info');
 const submitBtn = document.getElementById('login-submit');
 const forgotLink = document.getElementById('forgot-password');
 
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
+async function login() {
   errorEl.textContent = '';
   infoEl.textContent = '';
   submitBtn.disabled = true;
@@ -48,6 +47,16 @@ form.addEventListener('submit', async (event) => {
     errorEl.textContent = 'Login failed. Check your email and password.';
     submitBtn.disabled = false;
   }
+}
+
+// The button is type="button" (not "submit") so a click can never fall back
+// to a native form submission if this listener is ever slow to attach — the
+// submit listener below only exists as a safety net for pressing Enter in
+// a field, and preventDefault()s immediately either way.
+submitBtn.addEventListener('click', login);
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  login();
 });
 
 forgotLink.addEventListener('click', async (event) => {

@@ -126,9 +126,21 @@ button:disabled {
   color: var(--muted);
 }
 
-.foot a {
+.foot a,
+.foot .link-btn {
   color: var(--permit);
   text-decoration: none;
 }
 
-.foot a:hover { text-decoration: underline; }
+.foot a:hover,
+.foot .link-btn:hover { text-decoration: underline; }
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  width: auto;
+}

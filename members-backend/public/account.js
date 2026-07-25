@@ -35,8 +35,7 @@ fetch('/members/whoami')
   })
   .catch(() => {});
 
-nameForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
+async function saveDisplayName() {
   nameErrorEl.textContent = '';
   nameInfoEl.textContent = '';
 
@@ -54,10 +53,19 @@ nameForm.addEventListener('submit', async (event) => {
   } finally {
     nameSubmitBtn.disabled = false;
   }
+}
+
+// The button is type="button" (not "submit") so a click can never fall back
+// to a native form submission if this listener is ever slow to attach — the
+// submit listener below only exists as a safety net for pressing Enter in
+// the field, and preventDefault()s immediately either way.
+nameSubmitBtn.addEventListener('click', saveDisplayName);
+nameForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  saveDisplayName();
 });
 
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
+async function changePassword() {
   errorEl.textContent = '';
   infoEl.textContent = '';
 
@@ -101,4 +109,10 @@ form.addEventListener('submit', async (event) => {
   } finally {
     submitBtn.disabled = false;
   }
+}
+
+submitBtn.addEventListener('click', changePassword);
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  changePassword();
 });
