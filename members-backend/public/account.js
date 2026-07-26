@@ -54,7 +54,7 @@ fetch('/members/whoami')
       ? 'Two-factor authentication is currently enabled on this account.'
       : 'Two-factor authentication is not currently enabled on this account.';
     if (data.mfaEnrolled) {
-      mfaStartForm.style.display = 'none';
+      mfaStartForm.classList.add('hidden');
     } else if (new URLSearchParams(window.location.search).get('mfa') === 'required') {
       mfaStartErrorEl.textContent = 'Two-factor authentication is required for admin accounts. Set it up below to continue.';
     }
@@ -162,8 +162,8 @@ async function startMfaEnrollment() {
     pendingTotpSecret = await TotpMultiFactorGenerator.generateSecret(session);
 
     mfaSecretKeyEl.textContent = pendingTotpSecret.secretKey;
-    mfaStartForm.style.display = 'none';
-    mfaVerifyForm.style.display = 'block';
+    mfaStartForm.classList.add('hidden');
+    mfaVerifyForm.classList.remove('hidden');
   } catch (err) {
     mfaStartErrorEl.textContent = 'Could not start setup. Check your current password and try again.';
   } finally {
@@ -197,7 +197,7 @@ async function verifyMfaEnrollment() {
     });
 
     mfaVerifyInfoEl.textContent = 'Two-factor authentication enabled.';
-    mfaVerifyForm.style.display = 'none';
+    mfaVerifyForm.classList.add('hidden');
     mfaCurrentStatusEl.textContent = 'Two-factor authentication is currently enabled on this account.';
   } catch (err) {
     mfaVerifyErrorEl.textContent = 'Invalid code. Try again.';

@@ -62,8 +62,8 @@ async function login() {
   } catch (err) {
     if (err.code === 'auth/multi-factor-auth-required') {
       pendingResolver = getMultiFactorResolver(auth, err);
-      form.style.display = 'none';
-      mfaForm.style.display = 'block';
+      form.classList.add('hidden');
+      mfaForm.classList.remove('hidden');
       infoEl.textContent = '';
       submitBtn.disabled = false;
       return;
