@@ -24,6 +24,14 @@
 
     <button type="button" id="login-submit">Sign in</button>
   </form>
+  <form id="mfa-form" novalidate style="display:none;">
+    <label for="mfa-login-code">6-digit code from your authenticator app</label>
+    <input type="text" id="mfa-login-code" name="mfa-login-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+
+    <p class="error" id="mfa-login-error"></p>
+
+    <button type="button" id="mfa-login-submit">Verify</button>
+  </form>
   <p class="foot"><button type="button" id="forgot-password" class="link-btn">Forgot password?</button></p>
 </main>
 <script type="module" src="/members/dist/login.bundle.js"></script>

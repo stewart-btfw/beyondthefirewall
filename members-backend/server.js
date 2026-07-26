@@ -42,11 +42,16 @@ app.use('/members/dist', express.static(path.join(PUBLIC_DIR, 'dist'), {
   setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
 }));
 
+const SESSION_REISSUE_REASONS = {
+  password_changed: 'password_changed',
+  mfa_enrolled: 'mfa_enrolled',
+};
+
 app.post('/members/session', async (req, res) => {
   const idToken = req.body && req.body.idToken;
-  // Optional: 'password_changed' when this call is reissuing a session
-  // right after a password change, so the audit log reflects that instead
-  // of looking like an ordinary login.
+  // Optional: distinguishes a session *reissue* (after a password change or
+  // MFA enrollment, both of which can invalidate the current cookie — see
+  // account.js) from an ordinary login, purely for audit-log clarity.
   const reason = req.body && req.body.reason;
   if (!idToken) {
     return res.status(400).json({ error: 'missing idToken' });
@@ -65,7 +70,7 @@ app.post('/members/session', async (req, res) => {
       path: '/members/',
     });
     logAuthEvent({
-      type: reason === 'password_changed' ? 'password_changed' : 'login_attempt',
+      type: SESSION_REISSUE_REASONS[reason] || 'login_attempt',
       outcome: 'success',
       email: decoded.email,
       ip: req.ip,
@@ -106,10 +111,28 @@ async function requireSession(req, res, next) {
   }
 }
 
-function requireAdmin(req, res, next) {
+function hasMfaEnrolled(userRecord) {
+  return !!(userRecord.multiFactor
+    && userRecord.multiFactor.enrolledFactors
+    && userRecord.multiFactor.enrolledFactors.length > 0);
+}
+
+// Admin routes additionally require MFA to be enrolled — the account is
+// the one with broad Firebase Auth admin rights (invite/disable any user),
+// so it's the one place this app enforces the otherwise-optional MFA.
+async function requireAdmin(req, res, next) {
   const email = (req.user && req.user.email || '').toLowerCase();
   if (!ADMIN_EMAILS.includes(email)) {
     return res.status(403).send('Forbidden');
+  }
+  try {
+    const userRecord = await admin.auth().getUser(req.user.uid);
+    if (!hasMfaEnrolled(userRecord)) {
+      return res.redirect('/members/account?mfa=required');
+    }
+  } catch (err) {
+    console.error('requireAdmin: MFA check failed:', err);
+    return res.status(500).send('Could not verify account security status');
   }
   next();
 }
@@ -126,19 +149,23 @@ app.get('/members/account.css', (req, res) => {
 app.get('/members/whoami', requireSession, async (req, res) => {
   const email = (req.user.email || '');
   // Looked up fresh (not read off the session cookie's cached claims) so a
-  // just-changed display name shows immediately, without needing a re-login.
+  // just-changed display name/MFA status shows immediately, without needing
+  // a re-login.
   let displayName = null;
+  let mfaEnrolled = false;
   try {
     const userRecord = await admin.auth().getUser(req.user.uid);
     displayName = userRecord.displayName || null;
+    mfaEnrolled = hasMfaEnrolled(userRecord);
   } catch (err) {
-    console.error('whoami: could not look up display name:', err);
+    console.error('whoami: could not look up user record:', err);
   }
   res.status(200).json({
     email,
     uid: req.user.uid,
     ip: req.ip,
     displayName,
+    mfaEnrolled,
     isAdmin: ADMIN_EMAILS.includes(email.toLowerCase()),
   });
 });

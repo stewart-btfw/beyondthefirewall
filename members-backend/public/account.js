@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, updatePassword } from 'firebase/auth';
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  updatePassword,
+  multiFactor,
+  TotpMultiFactorGenerator,
+} from 'firebase/auth';
 
 // Firebase web config is not secret (it's a public client identifier gated by
 // Firebase Auth + the referrer restriction on the API key, not by secrecy).
@@ -24,7 +30,19 @@ const nameErrorEl = document.getElementById('displayname-error');
 const nameInfoEl = document.getElementById('displayname-info');
 const nameSubmitBtn = document.getElementById('displayname-submit');
 
+const mfaCurrentStatusEl = document.getElementById('mfa-current-status');
+const mfaStartForm = document.getElementById('mfa-start-form');
+const mfaStartErrorEl = document.getElementById('mfa-start-error');
+const mfaStartSubmitBtn = document.getElementById('mfa-start-submit');
+const mfaVerifyForm = document.getElementById('mfa-verify-form');
+const mfaSecretKeyEl = document.getElementById('mfa-secret-key');
+const mfaVerifyErrorEl = document.getElementById('mfa-verify-error');
+const mfaVerifyInfoEl = document.getElementById('mfa-verify-info');
+const mfaVerifySubmitBtn = document.getElementById('mfa-verify-submit');
+
 let currentEmail = '';
+let enrolledUser = null; // set once re-auth succeeds in startMfaEnrollment()
+let pendingTotpSecret = null;
 
 fetch('/members/whoami')
   .then((res) => res.json())
@@ -32,6 +50,14 @@ fetch('/members/whoami')
     currentEmail = data.email || '';
     whoamiEl.textContent = currentEmail ? `Signed in as ${currentEmail}` : '';
     nameInput.value = data.displayName || '';
+    mfaCurrentStatusEl.textContent = data.mfaEnrolled
+      ? 'Two-factor authentication is currently enabled on this account.'
+      : 'Two-factor authentication is not currently enabled on this account.';
+    if (data.mfaEnrolled) {
+      mfaStartForm.style.display = 'none';
+    } else if (new URLSearchParams(window.location.search).get('mfa') === 'required') {
+      mfaStartErrorEl.textContent = 'Two-factor authentication is required for admin accounts. Set it up below to continue.';
+    }
   })
   .catch(() => {});
 
@@ -115,4 +141,79 @@ submitBtn.addEventListener('click', changePassword);
 form.addEventListener('submit', (event) => {
   event.preventDefault();
   changePassword();
+});
+
+async function startMfaEnrollment() {
+  mfaStartErrorEl.textContent = '';
+  const currentPassword = document.getElementById('mfa-current-password').value;
+  if (!currentEmail || !currentPassword) {
+    mfaStartErrorEl.textContent = 'Enter your current password first.';
+    return;
+  }
+
+  mfaStartSubmitBtn.disabled = true;
+  try {
+    // Enrolling a second factor is a sensitive change, same as a password
+    // update — Firebase requires a fresh sign-in first.
+    const credential = await signInWithEmailAndPassword(auth, currentEmail, currentPassword);
+    enrolledUser = credential.user;
+
+    const session = await multiFactor(enrolledUser).getSession();
+    pendingTotpSecret = await TotpMultiFactorGenerator.generateSecret(session);
+
+    mfaSecretKeyEl.textContent = pendingTotpSecret.secretKey;
+    mfaStartForm.style.display = 'none';
+    mfaVerifyForm.style.display = 'block';
+  } catch (err) {
+    mfaStartErrorEl.textContent = 'Could not start setup. Check your current password and try again.';
+  } finally {
+    mfaStartSubmitBtn.disabled = false;
+  }
+}
+
+async function verifyMfaEnrollment() {
+  mfaVerifyErrorEl.textContent = '';
+  mfaVerifyInfoEl.textContent = '';
+
+  const code = document.getElementById('mfa-code').value.trim();
+  if (!enrolledUser || !pendingTotpSecret || !code) {
+    mfaVerifyErrorEl.textContent = 'Enter the 6-digit code from your authenticator app.';
+    return;
+  }
+
+  mfaVerifySubmitBtn.disabled = true;
+  try {
+    const assertion = TotpMultiFactorGenerator.assertionForEnrollment(pendingTotpSecret, code);
+    await multiFactor(enrolledUser).enroll(assertion, 'Authenticator app');
+
+    // Reissue the session so the server's mfaEnrolled/requireAdmin checks
+    // (which read a fresh admin.auth().getUser() lookup, not cookie claims)
+    // see the new factor immediately, without a re-login.
+    const idToken = await enrolledUser.getIdToken(true);
+    await fetch('/members/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, reason: 'mfa_enrolled' }),
+    });
+
+    mfaVerifyInfoEl.textContent = 'Two-factor authentication enabled.';
+    mfaVerifyForm.style.display = 'none';
+    mfaCurrentStatusEl.textContent = 'Two-factor authentication is currently enabled on this account.';
+  } catch (err) {
+    mfaVerifyErrorEl.textContent = 'Invalid code. Try again.';
+  } finally {
+    mfaVerifySubmitBtn.disabled = false;
+  }
+}
+
+mfaStartSubmitBtn.addEventListener('click', startMfaEnrollment);
+mfaStartForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  startMfaEnrollment();
+});
+
+mfaVerifySubmitBtn.addEventListener('click', verifyMfaEnrollment);
+mfaVerifyForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  verifyMfaEnrollment();
 });
