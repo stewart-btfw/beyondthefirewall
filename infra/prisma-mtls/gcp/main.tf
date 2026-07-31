@@ -127,6 +127,15 @@ resource "google_compute_backend_service" "members" {
   load_balancing_scheme = "EXTERNAL_MANAGED"
   protocol              = "HTTPS"
 
+  # Requests that make it past the mTLS gate to the backend get logged here.
+  # Note: connections rejected by the server_tls_policy (REJECT_INVALID)
+  # happen before traffic reaches the backend, so they won't appear in these
+  # logs — this only helps diagnose what happens to requests that pass mTLS.
+  log_config {
+    enable      = true
+    sample_rate = 1.0
+  }
+
   backend {
     group = google_compute_region_network_endpoint_group.members.id
   }
