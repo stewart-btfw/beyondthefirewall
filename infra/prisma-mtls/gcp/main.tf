@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.11"
+    }
   }
 }
 
@@ -21,11 +25,24 @@ resource "google_project_service" "network_security" {
   disable_on_destroy = false
 }
 
+# Newly-enabled APIs can 403 as SERVICE_DISABLED for a short window after the
+# enable call returns success — this gives propagation time before anything
+# that depends on Certificate Manager / Network Security tries to use them.
+resource "time_sleep" "wait_for_apis" {
+  create_duration = "60s"
+  depends_on = [
+    google_project_service.certificate_manager,
+    google_project_service.network_security,
+  ]
+}
+
 # --- TLS for the hostname itself (server-side cert, Google-managed via DNS) ---
 
 resource "google_certificate_manager_dns_authorization" "members" {
   name   = "members-dns-auth"
   domain = var.hostname
+
+  depends_on = [time_sleep.wait_for_apis]
 }
 
 resource "google_certificate_manager_certificate" "members" {
@@ -34,10 +51,19 @@ resource "google_certificate_manager_certificate" "members" {
     domains            = [var.hostname]
     dns_authorizations = [google_certificate_manager_dns_authorization.members.id]
   }
+
+  # GCP reads this back with the project *number* even though it was written
+  # with the project *ID* — same resource, cosmetic diff. Without this,
+  # Terraform wants to destroy/recreate a perfectly healthy certificate.
+  lifecycle {
+    ignore_changes = [managed[0].dns_authorizations]
+  }
 }
 
 resource "google_certificate_manager_certificate_map" "members" {
   name = "members-cert-map"
+
+  depends_on = [time_sleep.wait_for_apis]
 }
 
 resource "google_certificate_manager_certificate_map_entry" "members" {
@@ -63,7 +89,7 @@ resource "google_certificate_manager_trust_config" "prisma_access" {
     }
   }
 
-  depends_on = [google_project_service.certificate_manager]
+  depends_on = [time_sleep.wait_for_apis]
 }
 
 resource "google_network_security_server_tls_policy" "require_prisma_access_cert" {
@@ -75,7 +101,12 @@ resource "google_network_security_server_tls_policy" "require_prisma_access_cert
     client_validation_trust_config = google_certificate_manager_trust_config.prisma_access.id
   }
 
-  depends_on = [google_project_service.network_security]
+  # Same project-number-vs-project-ID cosmetic diff as the certificate above.
+  lifecycle {
+    ignore_changes = [mtls_policy[0].client_validation_trust_config]
+  }
+
+  depends_on = [time_sleep.wait_for_apis]
 }
 
 # --- Backend: dedicated demo Cloud Run service, fully isolated from the

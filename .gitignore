@@ -8,3 +8,4 @@ infra/prisma-mtls/**/.terraform/
 infra/prisma-mtls/**/terraform.tfstate*
 infra/prisma-mtls/**/*.tfvars
 !infra/prisma-mtls/**/terraform.tfvars.example
+infra/prisma-mtls/**/tfplan
