@@ -3,3 +3,8 @@ members-backend/public/dist/
 .env
 admin-scripts/invitees.csv
 admin-scripts/*.key.json
+infra/prisma-mtls/**/certs/
+infra/prisma-mtls/**/.terraform/
+infra/prisma-mtls/**/terraform.tfstate*
+infra/prisma-mtls/**/*.tfvars
+!infra/prisma-mtls/**/terraform.tfvars.example

@@ -1,0 +1,41 @@
+name: Deploy members-backend-demo to Cloud Run
+
+# Isolated copy of members-backend for the Prisma Access Browser mTLS demo —
+# see infra/prisma-mtls/gcp/. Separate service, separate ingress rule, so
+# this never touches the production members-backend deploy or traffic.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'members-backend/**'
+      - '.github/workflows/deploy-members-backend-demo.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: beyondthefirewall
+          workload_identity_provider: projects/1088119214299/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-actions-deploy@beyondthefirewall.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy members-backend-demo \
+            --source members-backend/ \
+            --region=australia-southeast1 \
+            --project=beyondthefirewall \
+            --ingress=internal-and-cloud-load-balancing \
+            --quiet

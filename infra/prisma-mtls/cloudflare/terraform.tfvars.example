@@ -1,0 +1,9 @@
+cloudflare_account_id = "REPLACE_WITH_ACCOUNT_ID"
+cloudflare_zone_id    = "REPLACE_WITH_ZONE_ID"
+
+# hostname, protected_path, and ca_cert_path use their defaults from
+# variables.tf unless overridden here.
+
+# cloudflare_api_token is intentionally omitted — set it via:
+#   export TF_VAR_cloudflare_api_token=...
+# so it never lands in a file that could get committed.
