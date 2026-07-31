@@ -1,0 +1,42 @@
+name: Deploy marketing site to web-01
+
+# Pulls the latest static site files onto the nginx VM (web-01). That VM
+# serves index.html etc. directly from a git checkout of this repo — pushing
+# here doesn't update the live site by itself, this workflow is what does.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'style.css'
+      - '*.svg'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - '.github/workflows/deploy-site.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: beyondthefirewall
+          workload_identity_provider: projects/1088119214299/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-actions-deploy@beyondthefirewall.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Pull latest on web-01
+        run: |
+          gcloud compute ssh web-01 \
+            --zone=australia-southeast1-b \
+            --project=beyondthefirewall \
+            --tunnel-through-iap \
+            --command="sudo git config --global --add safe.directory /var/www/html && sudo git -C /var/www/html pull"
