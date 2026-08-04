@@ -1,0 +1,9 @@
+cloudflare_account_id = "2314a9913a2e9dadad8bb6d1625aa17b"
+cloudflare_zone_id    = "98528201d83d6d272edb65192795677c" # beyondthefirewall.io
+
+# web_hostname, ssh_hostname, web_port use their defaults from variables.tf
+# unless overridden here.
+
+# cloudflare_api_token is intentionally omitted — set it via:
+#   set "TF_VAR_cloudflare_api_token=..."
+# so it never lands in a file that could get committed.

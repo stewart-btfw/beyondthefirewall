@@ -1,8 +1,9 @@
-name: Deploy marketing site to web-01
+name: Deploy marketing site
 
-# Pulls the latest static site files onto the nginx VM (web-01). That VM
-# serves index.html etc. directly from a git checkout of this repo — pushing
-# here doesn't update the live site by itself, this workflow is what does.
+# Pulls the latest static site files onto both hosts that serve this content:
+# web-01 (GCP, beyondthefirewall.me) and the home Raspberry Pi (Cloudflare
+# Tunnel, beyondthefirewall.io). Both just do a git pull in their docroot —
+# pushing here doesn't update either live site by itself, this workflow does.
 
 on:
   push:
@@ -21,7 +22,7 @@ permissions:
   id-token: write
 
 jobs:
-  deploy:
+  deploy-gcp:
     runs-on: ubuntu-latest
     steps:
       - id: auth
@@ -40,3 +41,29 @@ jobs:
             --project=beyondthefirewall \
             --tunnel-through-iap \
             --command="sudo git config --global --add safe.directory /var/www/html && sudo git -C /var/www/html pull"
+
+  deploy-pi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install cloudflared
+        run: |
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+          chmod +x /usr/local/bin/cloudflared
+
+      - name: Pull latest on the Pi
+        env:
+          SSH_KEY: ${{ secrets.PI_DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/pi_deploy_key
+          chmod 600 ~/.ssh/pi_deploy_key
+          # The Pi's authorized_keys forces this connection straight into
+          # `cd /var/www/html && git pull` regardless of what's requested
+          # here, so the trailing `true` is just a placeholder command.
+          ssh -i ~/.ssh/pi_deploy_key \
+            -o ProxyCommand="cloudflared access ssh --hostname %h" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            liversalts@pi-ssh.beyondthefirewall.io true
