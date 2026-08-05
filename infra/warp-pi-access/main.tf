@@ -33,6 +33,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
         service  = "http://localhost:${var.web_port}"
       },
       {
+        hostname = var.www_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
         hostname = var.ssh_hostname
         service  = "ssh://localhost:22"
       },
@@ -59,6 +63,18 @@ resource "cloudflare_dns_record" "pi_web" {
 resource "cloudflare_dns_record" "pi_apex" {
   zone_id = var.cloudflare_zone_id
   name    = var.apex_hostname
+  type    = "CNAME"
+  content = "${var.tunnel_id}.cfargotunnel.com"
+  proxied = true
+  ttl     = 1
+}
+
+# Also proxied to the tunnel (not a Cloudflare edge redirect) so it can be
+# canonicalized to the apex by the Pi's nginx, the same way web-01 handles
+# www.beyondthefirewall.me — see raspberrypistatic.conf.
+resource "cloudflare_dns_record" "pi_www" {
+  zone_id = var.cloudflare_zone_id
+  name    = var.www_hostname
   type    = "CNAME"
   content = "${var.tunnel_id}.cfargotunnel.com"
   proxied = true
@@ -98,7 +114,7 @@ resource "cloudflare_ruleset" "ssh_rate_limit" {
   kind        = "zone"
 
   rules = [{
-    description = "Rate limit pi-ssh connection attempts"
+    description = "Rate limit ssh connection attempts"
     expression  = "(http.host eq \"${var.ssh_hostname}\")"
     action      = "block"
 

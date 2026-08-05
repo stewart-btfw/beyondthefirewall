@@ -23,7 +23,7 @@ variable "tunnel_id" {
 variable "web_hostname" {
   description = "Public hostname for the Pi's website."
   type        = string
-  default     = "pi-web.beyondthefirewall.io"
+  default     = "web.beyondthefirewall.io"
 }
 
 variable "apex_hostname" {
@@ -32,10 +32,16 @@ variable "apex_hostname" {
   default     = "beyondthefirewall.io"
 }
 
+variable "www_hostname" {
+  description = "www hostname, routed to the Pi and redirected to the apex."
+  type        = string
+  default     = "www.beyondthefirewall.io"
+}
+
 variable "ssh_hostname" {
   description = "Public hostname for SSH access to the Pi."
   type        = string
-  default     = "pi-ssh.beyondthefirewall.io"
+  default     = "ssh.beyondthefirewall.io"
 }
 
 variable "web_port" {

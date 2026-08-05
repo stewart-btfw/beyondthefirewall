@@ -66,4 +66,4 @@ jobs:
             -o UserKnownHostsFile=/dev/null \
             -o BatchMode=yes \
             -o ConnectTimeout=15 \
-            liversalts@pi-ssh.beyondthefirewall.io true
+            liversalts@ssh.beyondthefirewall.io true
