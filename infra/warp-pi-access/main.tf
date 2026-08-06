@@ -1,4 +1,9 @@
 terraform {
+  backend "gcs" {
+    bucket = "beyondthefirewall-tfstate"
+    prefix = "warp-pi-access"
+  }
+
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
