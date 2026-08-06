@@ -1,0 +1,29 @@
+name: Uptime check
+
+# Cheap uptime monitoring with no new third-party account: a failed run here
+# shows up red in the Actions tab and triggers GitHub's own notification
+# (email/web, per your GitHub notification settings) to whoever owns/watches
+# this repo. Checks both domains' homepage and the members login page, since
+# that's proxied through a different path (nginx -> Cloud Run) than the
+# static homepage and can fail independently of it.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check beyondthefirewall.me
+        run: curl -fsS --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.me -o /dev/null
+
+      - name: Check beyondthefirewall.io
+        run: curl -fsS --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.io -o /dev/null
+
+      - name: Check beyondthefirewall.me members login
+        run: curl -fsS --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.me/members/login -o /dev/null
+
+      - name: Check beyondthefirewall.io members login
+        run: curl -fsS --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.io/members/login -o /dev/null
