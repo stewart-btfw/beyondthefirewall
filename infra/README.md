@@ -35,11 +35,15 @@ the tunnel's ingress config, and the SSH rate-limiting ruleset.
 Terraform-managed — they're hand-edited via SSH, same as they were before
 this project started.
 
-State is local-only (`terraform.tfstate` in that directory, gitignored) —
-no remote backend. If that file is lost, recovering means reconstructing
-resource IDs from the Cloudflare dashboard and re-importing. Worth moving
-to a remote backend (Terraform Cloud free tier, or a GCS bucket) if this
-grows further.
+State lives in a versioned, private GCS bucket (`beyondthefirewall-tfstate`,
+prefix `warp-pi-access`), not locally. `terraform init` picks up the
+backend automatically from `main.tf`. Auth for the GCS backend uses your
+own Application Default Credentials (`gcloud auth application-default
+login`) — if that's ever reconfigured to impersonate a service account
+your account can't impersonate (as happened once already), `terraform
+init`/`plan` will fail with a `PERMISSION_DENIED` on
+`iam.serviceAccounts.getAccessToken`; fix is to rerun that login command
+without impersonation.
 
 Run `terraform apply` from `infra/warp-pi-access/` — it'll prompt for
 `cloudflare_account_id`, `cloudflare_api_token` (paste at the masked
@@ -73,8 +77,3 @@ Cloudflare's "Leaked Credential Check" rate-limiting rule is live on
 `.me`'s `/members/login` but **not** `.io` — the free plan allows only one
 rate-limiting rule per zone, and `.io`'s is already used by SSH protection.
 
-## Backups
-
-Pi: `/var/www/html.bak-<date>` from the docroot migration is still present,
-outside the docroot (not web-exposed) — safe to delete once you're sure you
-don't need it.
