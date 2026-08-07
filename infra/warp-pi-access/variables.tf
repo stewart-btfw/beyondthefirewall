@@ -44,6 +44,12 @@ variable "ssh_hostname" {
   default     = "ssh.beyondthefirewall.io"
 }
 
+variable "metrics_hostname" {
+  description = "Public hostname for the Pi's node_exporter metrics (basic-auth protected by nginx)."
+  type        = string
+  default     = "metrics.beyondthefirewall.io"
+}
+
 variable "web_port" {
   description = "Local port the Pi's web server listens on."
   type        = number

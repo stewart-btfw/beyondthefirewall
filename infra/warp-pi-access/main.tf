@@ -46,6 +46,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
         service  = "ssh://localhost:22"
       },
       {
+        hostname = var.metrics_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
         service = "http_status:404"
       },
     ]
@@ -89,6 +93,18 @@ resource "cloudflare_dns_record" "pi_www" {
 resource "cloudflare_dns_record" "pi_ssh" {
   zone_id = var.cloudflare_zone_id
   name    = var.ssh_hostname
+  type    = "CNAME"
+  content = "${var.tunnel_id}.cfargotunnel.com"
+  proxied = true
+  ttl     = 1
+}
+
+# node_exporter system metrics — nginx gates this with HTTP Basic Auth
+# (see raspberrypistatic.conf); node_exporter itself only listens on
+# 127.0.0.1:9100, unreachable except through that nginx proxy.
+resource "cloudflare_dns_record" "pi_metrics" {
+  zone_id = var.cloudflare_zone_id
+  name    = var.metrics_hostname
   type    = "CNAME"
   content = "${var.tunnel_id}.cfargotunnel.com"
   proxied = true
