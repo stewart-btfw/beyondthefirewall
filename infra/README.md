@@ -77,3 +77,11 @@ Cloudflare's "Leaked Credential Check" rate-limiting rule is live on
 `.me`'s `/members/login` but **not** `.io` — the free plan allows only one
 rate-limiting rule per zone, and `.io`'s is already used by SSH protection.
 
+## Pi system monitoring
+
+`node_exporter` runs on the Pi (`systemctl status prometheus-node-exporter`),
+bound to `127.0.0.1:9100` only. `metrics.beyondthefirewall.io` reaches it
+through nginx, which gates it with HTTP Basic Auth
+(`/etc/nginx/.metrics_htpasswd` on the Pi — not in this repo, not in
+Terraform). `web-01` has no equivalent exposed yet.
+
