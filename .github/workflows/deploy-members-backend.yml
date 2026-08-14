@@ -1,4 +1,10 @@
-name: Deploy members-backend to Cloud Run
+name: Deploy members-backend to the Pi
+
+# members-backend runs as a systemd service directly on the Raspberry Pi
+# now (see infra/README.md) — no more Cloud Run. The Pi's authorized_keys
+# forces this connection into a fixed command: git pull, npm install,
+# rebuild the frontend bundles, restart the service. Nothing else this key
+# can do (no shell, no port forwarding).
 
 on:
   push:
@@ -10,27 +16,27 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          project_id: beyondthefirewall
-          workload_identity_provider: projects/1088119214299/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-          service_account: github-actions-deploy@beyondthefirewall.iam.gserviceaccount.com
-
-      - uses: google-github-actions/setup-gcloud@v2
-
-      - name: Deploy to Cloud Run
+      - name: Install cloudflared
         run: |
-          gcloud run deploy members-backend \
-            --source members-backend/ \
-            --region=australia-southeast1 \
-            --project=beyondthefirewall \
-            --quiet
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+          chmod +x /usr/local/bin/cloudflared
+
+      - name: Deploy on the Pi
+        env:
+          SSH_KEY: ${{ secrets.MEMBERS_DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/members_deploy_key
+          chmod 600 ~/.ssh/members_deploy_key
+          ssh -i ~/.ssh/members_deploy_key \
+            -o ProxyCommand="cloudflared access ssh --hostname %h" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            liversalts@ssh.beyondthefirewall.io true

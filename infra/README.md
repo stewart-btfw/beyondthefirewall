@@ -1,39 +1,65 @@
 # Infrastructure overview
 
-Two independent origins serve the same content from this repo, kept in sync
-by [`deploy-site.yml`](../.github/workflows/deploy-site.yml) on every push
-to `main`:
+Both `beyondthefirewall.io` and `beyondthefirewall.me` run entirely from
+the home Raspberry Pi ("lenoir") now — no GCP compute at all. GCP is only
+still used for Firebase Authentication (the identity provider behind
+`/members/*`), which lives in the same `beyondthefirewall` project but
+costs essentially nothing at this traffic level.
 
-| | `beyondthefirewall.me` | `beyondthefirewall.io` |
-|---|---|---|
-| Host | GCP VM `web-01` (`australia-southeast1-b`) | Home Raspberry Pi ("lenoir") |
-| Reached via | Direct A record → Cloudflare-proxied | Cloudflare Tunnel (`cloudflared`, no port forwarding) |
-| Web server | nginx, config at `/etc/nginx/sites-enabled/default` | nginx, config at `/etc/nginx/sites-available/raspberrypistatic.conf` |
-| Docroot | `/var/www/html` — full git checkout of this repo | same |
-| SSH access | IAP tunnel only, no public port (`gcloud compute ssh --tunnel-through-iap`) | `ssh.beyondthefirewall.io` via Cloudflare Tunnel, key-only auth, edge rate-limited |
+Everything reaches the Pi via a single Cloudflare Tunnel (`cloudflared`,
+no port forwarding on the home router). Both domains' DNS (apex + `www`)
+CNAME to the tunnel and are proxied through Cloudflare's edge.
+
+| | |
+|---|---|
+| Web server | nginx, config at `/etc/nginx/sites-available/raspberrypistatic.conf` |
+| Static docroot | `/var/www/html` — full git checkout of this repo |
+| SSH access | `ssh.beyondthefirewall.io` via Cloudflare Tunnel, key-only auth, edge rate-limited |
+| Members backend | `members-backend` systemd service, Node 20, port 8080, only reachable via nginx |
+
+Deploys are two separate GitHub Actions workflows, both reaching the Pi
+the same way (`cloudflared access ssh` as an SSH `ProxyCommand`, forced
+commands in `authorized_keys` so each deploy key can only do exactly one
+thing):
+
+- [`deploy-site.yml`](../.github/workflows/deploy-site.yml) — static site changes (`index.html`, `style.css`, etc.) trigger a `git pull` in `/var/www/html`
+- [`deploy-members-backend.yml`](../.github/workflows/deploy-members-backend.yml) — changes under `members-backend/` trigger `git pull && npm install && npm run build && sudo systemctl restart members-backend` (that `sudo` works passwordless only for this one exact command, via `/etc/sudoers.d/members-backend-restart`)
 
 ## Members area
 
-`/members/*` on both domains reverse-proxies to a single Cloud Run service,
-`members-backend` (see `../members-backend/`). The Cloud Run service has to
-stay publicly reachable (`ingress: all`) since the Pi has no private network
-path to it — direct hits to its `*.run.app` URL are blocked by a shared
-secret (`PROXY_SECRET`, GCP Secret Manager, secret name
-`proxy-shared-secret`) that both nginx configs send as `X-Proxy-Secret` and
-`server.js` validates. **If you ever rotate that secret**, update it in
-Secret Manager, then update both nginx configs (search for
-`X-Proxy-Secret`), in that order — updating nginx first would just 403
-everyone until the secret's back in sync.
+`/members/*` on both domains reverse-proxies to the local
+`members-backend` service (`http://127.0.0.1:8080`) — not Cloud Run
+anymore. It authenticates to Firebase Admin SDK via a downloaded service
+account key (`/etc/members-backend/firebase-key.json` on the Pi, owned
+`liversalts:liversalts`, `chmod 600`, referenced by
+`GOOGLE_APPLICATION_CREDENTIALS` in the systemd unit) rather than GCP's
+metadata server, since the Pi isn't GCP infrastructure. If that key is
+ever lost or needs rotating: `gcloud iam service-accounts keys create` for
+`members-backend@beyondthefirewall.iam.gserviceaccount.com`, copy it to
+the Pi via `scp` (never paste key contents into chat), swap the file, then
+`sudo systemctl restart members-backend`.
+
+nginx also still sends an `X-Proxy-Secret` header that `server.js`
+validates (`PROXY_SECRET` env var in the systemd unit) — this was
+originally defense-in-depth against direct hits to Cloud Run's public
+`*.run.app` URL bypassing nginx's rate limiting. That specific threat no
+longer exists (the service has no public URL of its own now, only
+reachable via nginx on localhost), but the check is harmless to leave in
+place.
 
 ## Terraform
 
-`warp-pi-access/` manages the Cloudflare side of the Pi's setup: DNS records
-(`web`/`ssh`/`www`/apex, all CNAMEs to the existing "BTFW" tunnel — the
-tunnel itself isn't Terraform-managed, we don't have its original secret),
-the tunnel's ingress config, and the SSH rate-limiting ruleset.
-`beyondthefirewall.me`'s DNS and `web-01`'s nginx config are **not**
-Terraform-managed — they're hand-edited via SSH, same as they were before
-this project started.
+`warp-pi-access/` manages the Cloudflare side: DNS records for `.io`
+(`web`/`ssh`/`www`/apex — all CNAMEs to the "BTFW" tunnel; the tunnel
+itself isn't Terraform-managed, we don't have its original secret), the
+tunnel's ingress config (which also includes the `.me` apex/`www`
+hostnames, since tunnel ingress is an account-level resource, not tied to
+a single zone), and the SSH rate-limiting ruleset.
+
+`.me`'s actual DNS records live in a **separate Cloudflare zone** this
+project doesn't hold a `zone_id` for, so they're dashboard-managed, not
+Terraform — same as before. If `.me` and `.io` ever diverge in how they're
+routed, check the dashboard for `.me`, not just this Terraform config.
 
 State lives in a versioned, private GCS bucket (`beyondthefirewall-tfstate`,
 prefix `warp-pi-access`), not locally. `terraform init` picks up the
@@ -48,40 +74,36 @@ without impersonation.
 Run `terraform apply` from `infra/warp-pi-access/` — it'll prompt for
 `cloudflare_account_id`, `cloudflare_api_token` (paste at the masked
 prompt, don't set it as an env var — that lands in shell history in
-plaintext), and `cloudflare_zone_id`.
+plaintext), and `cloudflare_zone_id` (this is `.io`'s zone ID, even though
+the config now also touches `.me` hostnames via the tunnel ingress).
 
-## GCP IAM
+## GCP
 
-- `web-01` runs as `web01-runtime@beyondthefirewall.iam.gserviceaccount.com`
-  (just `logging.logWriter` + `monitoring.metricWriter`) — not the default
-  Compute Engine service account, which used to carry project-wide
-  `roles/editor`.
-- `github-actions-deploy@...` (used by all the GitHub Actions workflows)
-  needs `roles/storage.admin` project-wide — this looks broader than it
-  should be, but `gcloud run deploy --source` genuinely requires
-  project-level `storage.buckets.list` to auto-discover its Cloud Build
-  staging bucket, which can't be scoped to a single bucket. Narrowing this
-  further would mean switching off `--source` deploys (build a Docker image
-  and push it to a specific Artifact Registry repo instead) — not done yet.
+Deliberately minimal now — just what Firebase Authentication needs:
+
+- The `beyondthefirewall` project itself, kept for Firebase Auth
+- `members-backend@beyondthefirewall.iam.gserviceaccount.com`, scoped to
+  just `roles/firebaseauth.admin`, with a key file living on the Pi (see
+  above)
+- The `beyondthefirewall-tfstate` GCS bucket (fractions of a cent/month,
+  unrelated to hosting — just where this Terraform project's state lives)
+
+Everything else — `web-01`, the `members.beyondthefirewall.me` load
+balancer stack, the `members-backend` Cloud Run service, the
+`github-actions-deploy` service account and its Workload Identity
+Federation setup, the `proxy-shared-secret` Secret Manager secret — was
+torn down when this moved to the Pi. If you see any of those names again
+in GCP, something didn't get cleaned up.
 
 ## Security headers, HSTS, DNSSEC, SPF/DKIM/DMARC
 
 All applied at the Cloudflare zone level for both domains (dashboard, not
 Terraform) — HSTS (6mo, no includeSubDomains/preload), minimum TLS 1.2,
 DNSSEC, and SPF/DKIM/DMARC records that explicitly reject all mail (neither
-domain sends email). nginx on both origins also sets
-`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a CSP
-(tighter on the homepage, relaxed on `/members/*` for Firebase Auth).
+domain sends email). nginx also sets `X-Content-Type-Options`,
+`X-Frame-Options`, `Referrer-Policy`, and a CSP (tighter on the homepage,
+relaxed on `/members/*` for Firebase Auth).
 
 Cloudflare's "Leaked Credential Check" rate-limiting rule is live on
 `.me`'s `/members/login` but **not** `.io` — the free plan allows only one
 rate-limiting rule per zone, and `.io`'s is already used by SSH protection.
-
-## Pi system monitoring
-
-`node_exporter` runs on the Pi (`systemctl status prometheus-node-exporter`),
-bound to `127.0.0.1:9100` only. `metrics.beyondthefirewall.io` reaches it
-through nginx, which gates it with HTTP Basic Auth
-(`/etc/nginx/.metrics_htpasswd` on the Pi — not in this repo, not in
-Terraform). `web-01` has no equivalent exposed yet.
-

@@ -44,14 +44,20 @@ variable "ssh_hostname" {
   default     = "ssh.beyondthefirewall.io"
 }
 
-variable "metrics_hostname" {
-  description = "Public hostname for the Pi's node_exporter metrics (basic-auth protected by nginx)."
-  type        = string
-  default     = "metrics.beyondthefirewall.io"
-}
-
 variable "web_port" {
   description = "Local port the Pi's web server listens on."
   type        = number
   default     = 80
+}
+
+variable "me_apex_hostname" {
+  description = "beyondthefirewall.me apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform, since this project only holds the .io zone_id)."
+  type        = string
+  default     = "beyondthefirewall.me"
+}
+
+variable "me_www_hostname" {
+  description = "www.beyondthefirewall.me, routed to the Pi and redirected to the apex."
+  type        = string
+  default     = "www.beyondthefirewall.me"
 }

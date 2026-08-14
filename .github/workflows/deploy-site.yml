@@ -1,9 +1,9 @@
 name: Deploy marketing site
 
-# Pulls the latest static site files onto both hosts that serve this content:
-# web-01 (GCP, beyondthefirewall.me) and the home Raspberry Pi (Cloudflare
-# Tunnel, beyondthefirewall.io). Both just do a git pull in their docroot —
-# pushing here doesn't update either live site by itself, this workflow does.
+# Pulls the latest static site files onto the Raspberry Pi's docroot, which
+# serves both beyondthefirewall.io and beyondthefirewall.me (Cloudflare
+# Tunnel routes both hostnames there — see infra/warp-pi-access/). Pushing
+# here doesn't update the live site by itself, this workflow does.
 
 on:
   push:
@@ -19,29 +19,8 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  deploy-gcp:
-    runs-on: ubuntu-latest
-    steps:
-      - id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          project_id: beyondthefirewall
-          workload_identity_provider: projects/1088119214299/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-          service_account: github-actions-deploy@beyondthefirewall.iam.gserviceaccount.com
-
-      - uses: google-github-actions/setup-gcloud@v2
-
-      - name: Pull latest on web-01
-        run: |
-          gcloud compute ssh web-01 \
-            --zone=australia-southeast1-b \
-            --project=beyondthefirewall \
-            --tunnel-through-iap \
-            --command="sudo git config --global --add safe.directory /var/www/html && sudo git -C /var/www/html pull"
-
   deploy-pi:
     runs-on: ubuntu-latest
     steps:
