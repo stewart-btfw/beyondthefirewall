@@ -1,14 +1,19 @@
 # Infrastructure overview
 
-Both `beyondthefirewall.io` and `beyondthefirewall.me` run entirely from
-the home Raspberry Pi ("lenoir") now — no GCP compute at all. GCP is only
-still used for Firebase Authentication (the identity provider behind
+`beyondthefirewall.io`, `.me`, and `.org` all run entirely from the home
+Raspberry Pi ("lenoir") now — no GCP compute at all. GCP is only still
+used for Firebase Authentication (the identity provider behind
 `/members/*`), which lives in the same `beyondthefirewall` project but
 costs essentially nothing at this traffic level.
 
 Everything reaches the Pi via a single Cloudflare Tunnel (`cloudflared`,
-no port forwarding on the home router). Both domains' DNS (apex + `www`)
-CNAME to the tunnel and are proxied through Cloudflare's edge.
+no port forwarding on the home router). All three domains' DNS (apex +
+`www`) CNAME to the tunnel and are proxied through Cloudflare's edge.
+
+The Cloudflare account also holds `.app`, `.co.uk`, `.info`, and `.uk`
+variants of the domain — registered but currently unused (no DNS records,
+not pointed at anything). Not a mistake if you see them; just not wired up
+yet.
 
 | | |
 |---|---|
@@ -56,10 +61,11 @@ tunnel's ingress config (which also includes the `.me` apex/`www`
 hostnames, since tunnel ingress is an account-level resource, not tied to
 a single zone), and the SSH rate-limiting ruleset.
 
-`.me`'s actual DNS records live in a **separate Cloudflare zone** this
-project doesn't hold a `zone_id` for, so they're dashboard-managed, not
-Terraform — same as before. If `.me` and `.io` ever diverge in how they're
-routed, check the dashboard for `.me`, not just this Terraform config.
+`.me` and `.org`'s actual DNS records live in **separate Cloudflare
+zones** this project doesn't hold `zone_id`s for, so they're
+dashboard-managed, not Terraform — same as before. If either ever diverges
+from `.io` in how it's routed, check the dashboard for that zone, not just
+this Terraform config.
 
 State lives in a versioned, private GCS bucket (`beyondthefirewall-tfstate`,
 prefix `warp-pi-access`), not locally. `terraform init` picks up the
@@ -75,7 +81,8 @@ Run `terraform apply` from `infra/warp-pi-access/` — it'll prompt for
 `cloudflare_account_id`, `cloudflare_api_token` (paste at the masked
 prompt, don't set it as an env var — that lands in shell history in
 plaintext), and `cloudflare_zone_id` (this is `.io`'s zone ID, even though
-the config now also touches `.me` hostnames via the tunnel ingress).
+the config now also touches `.me` and `.org` hostnames via the tunnel
+ingress).
 
 ## GCP
 
@@ -104,6 +111,7 @@ domain sends email). nginx also sets `X-Content-Type-Options`,
 `X-Frame-Options`, `Referrer-Policy`, and a CSP (tighter on the homepage,
 relaxed on `/members/*` for Firebase Auth).
 
-Cloudflare's "Leaked Credential Check" rate-limiting rule is live on
-`.me`'s `/members/login` but **not** `.io` — the free plan allows only one
-rate-limiting rule per zone, and `.io`'s is already used by SSH protection.
+Cloudflare's "Leaked Credential Check" rate-limiting rule is live on both
+`.me` and `.org`'s `/members/login`, but **not** `.io` — the free plan
+allows only one rate-limiting rule per zone, and `.io`'s is already used
+by SSH protection.
