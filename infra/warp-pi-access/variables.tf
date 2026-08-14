@@ -73,3 +73,51 @@ variable "org_www_hostname" {
   type        = string
   default     = "www.beyondthefirewall.org"
 }
+
+variable "app_apex_hostname" {
+  description = "beyondthefirewall.app apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
+  type        = string
+  default     = "beyondthefirewall.app"
+}
+
+variable "app_www_hostname" {
+  description = "www.beyondthefirewall.app, routed to the Pi and redirected to the apex."
+  type        = string
+  default     = "www.beyondthefirewall.app"
+}
+
+variable "co_uk_apex_hostname" {
+  description = "beyondthefirewall.co.uk apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
+  type        = string
+  default     = "beyondthefirewall.co.uk"
+}
+
+variable "co_uk_www_hostname" {
+  description = "www.beyondthefirewall.co.uk, routed to the Pi and redirected to the apex."
+  type        = string
+  default     = "www.beyondthefirewall.co.uk"
+}
+
+variable "info_apex_hostname" {
+  description = "beyondthefirewall.info apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
+  type        = string
+  default     = "beyondthefirewall.info"
+}
+
+variable "info_www_hostname" {
+  description = "www.beyondthefirewall.info, routed to the Pi and redirected to the apex."
+  type        = string
+  default     = "www.beyondthefirewall.info"
+}
+
+variable "uk_apex_hostname" {
+  description = "beyondthefirewall.uk apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
+  type        = string
+  default     = "beyondthefirewall.uk"
+}
+
+variable "uk_www_hostname" {
+  description = "www.beyondthefirewall.uk, routed to the Pi and redirected to the apex."
+  type        = string
+  default     = "www.beyondthefirewall.uk"
+}

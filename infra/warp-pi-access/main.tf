@@ -62,6 +62,38 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
         service  = "http://localhost:${var.web_port}"
       },
       {
+        hostname = var.app_apex_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
+        hostname = var.app_www_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
+        hostname = var.co_uk_apex_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
+        hostname = var.co_uk_www_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
+        hostname = var.info_apex_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
+        hostname = var.info_www_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
+        hostname = var.uk_apex_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
+        hostname = var.uk_www_hostname
+        service  = "http://localhost:${var.web_port}"
+      },
+      {
         service = "http_status:404"
       },
     ]
