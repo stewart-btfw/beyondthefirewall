@@ -61,3 +61,15 @@ variable "me_www_hostname" {
   type        = string
   default     = "www.beyondthefirewall.me"
 }
+
+variable "org_apex_hostname" {
+  description = "beyondthefirewall.org apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
+  type        = string
+  default     = "beyondthefirewall.org"
+}
+
+variable "org_www_hostname" {
+  description = "www.beyondthefirewall.org, routed to the Pi and redirected to the apex."
+  type        = string
+  default     = "www.beyondthefirewall.org"
+}
