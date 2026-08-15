@@ -6,6 +6,7 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const app = express();
+app.disable('x-powered-by');
 app.set('trust proxy', true); // nginx sets X-Forwarded-For to the real client IP
 app.use(express.json());
 app.use(cookieParser());
