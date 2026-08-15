@@ -16,14 +16,17 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      # Custom UA so Cloudflare's Bot Fight Mode (on for every zone) can be
+      # told to skip challenging this specific monitor via a WAF rule,
+      # instead of weakening bot protection for everyone else.
       - name: Check beyondthefirewall.me
-        run: curl -fsS --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.me -o /dev/null
+        run: curl -fsS -A "BTFW-Uptime-Monitor/1.0" --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.me -o /dev/null
 
       - name: Check beyondthefirewall.io
-        run: curl -fsS --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.io -o /dev/null
+        run: curl -fsS -A "BTFW-Uptime-Monitor/1.0" --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.io -o /dev/null
 
       - name: Check beyondthefirewall.me members login
-        run: curl -fsS --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.me/members/login -o /dev/null
+        run: curl -fsS -A "BTFW-Uptime-Monitor/1.0" --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.me/members/login -o /dev/null
 
       - name: Check beyondthefirewall.io members login
-        run: curl -fsS --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.io/members/login -o /dev/null
+        run: curl -fsS -A "BTFW-Uptime-Monitor/1.0" --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.io/members/login -o /dev/null
