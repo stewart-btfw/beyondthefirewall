@@ -63,7 +63,7 @@ fetch('/members/whoami')
       mfaStartSubmitBtn.classList.add('hidden');
       verifyEmailSubmitBtn.classList.remove('hidden');
     } else if (new URLSearchParams(window.location.search).get('mfa') === 'required') {
-      mfaStartErrorEl.textContent = 'Two-factor authentication is required for admin accounts. Set it up below to continue.';
+      mfaStartErrorEl.textContent = 'Two-factor authentication is required to continue. Set it up below.';
     }
   })
   .catch(() => {});

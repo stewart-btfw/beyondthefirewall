@@ -134,22 +134,26 @@ function hasMfaEnrolled(userRecord) {
     && userRecord.multiFactor.enrolledFactors.length > 0);
 }
 
-// Admin routes additionally require MFA to be enrolled — the account is
-// the one with broad Firebase Auth admin rights (invite/disable any user),
-// so it's the one place this app enforces the otherwise-optional MFA.
-async function requireAdmin(req, res, next) {
-  const email = (req.user && req.user.email || '').toLowerCase();
-  if (!ADMIN_EMAILS.includes(email)) {
-    return res.status(403).send('Forbidden');
-  }
+// Applied to every member-only route except the account page itself (and
+// its supporting endpoints), which must stay reachable without MFA so an
+// unenrolled member can actually get there to enroll one.
+async function requireMfa(req, res, next) {
   try {
     const userRecord = await admin.auth().getUser(req.user.uid);
     if (!hasMfaEnrolled(userRecord)) {
       return res.redirect('/members/account?mfa=required');
     }
+    next();
   } catch (err) {
-    console.error('requireAdmin: MFA check failed:', err);
-    return res.status(500).send('Could not verify account security status');
+    console.error('requireMfa: could not verify MFA status:', err);
+    res.status(500).send('Could not verify account security status');
+  }
+}
+
+function requireAdmin(req, res, next) {
+  const email = (req.user && req.user.email || '').toLowerCase();
+  if (!ADMIN_EMAILS.includes(email)) {
+    return res.status(403).send('Forbidden');
   }
   next();
 }
@@ -210,13 +214,13 @@ app.post('/members/account/display-name', requireSession, async (req, res) => {
 // Admin: invite new users and enable/disable existing ones. Gated by
 // ADMIN_EMAILS (set via the Cloud Run service's env vars), not a Firebase
 // custom claim — simpler to reason about at this scale (a handful of admins).
-app.get('/members/admin', requireSession, requireAdmin, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
+app.get('/members/admin', requireSession, requireAdmin, requireMfa, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/members/admin.css', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.sendFile(path.join(PUBLIC_DIR, 'admin.css'));
 });
 
-app.get('/members/admin/users', requireSession, requireAdmin, async (req, res) => {
+app.get('/members/admin/users', requireSession, requireAdmin, requireMfa, async (req, res) => {
   try {
     const list = await admin.auth().listUsers(1000);
     const users = list.users
@@ -235,7 +239,7 @@ app.get('/members/admin/users', requireSession, requireAdmin, async (req, res) =
   }
 });
 
-app.post('/members/admin/invite', requireSession, requireAdmin, async (req, res) => {
+app.post('/members/admin/invite', requireSession, requireAdmin, requireMfa, async (req, res) => {
   const email = req.body && req.body.email;
   if (!email) {
     return res.status(400).json({ error: 'missing email' });
@@ -262,7 +266,7 @@ app.post('/members/admin/invite', requireSession, requireAdmin, async (req, res)
   }
 });
 
-app.post('/members/admin/toggle-disabled', requireSession, requireAdmin, async (req, res) => {
+app.post('/members/admin/toggle-disabled', requireSession, requireAdmin, requireMfa, async (req, res) => {
   const { uid, disabled } = req.body || {};
   if (!uid || typeof disabled !== 'boolean') {
     return res.status(400).json({ error: 'missing uid/disabled' });
@@ -286,7 +290,7 @@ app.post('/members/admin/toggle-disabled', requireSession, requireAdmin, async (
 // own multi-hour "Browser Cache TTL" default — no-store is the one
 // directive it won't override, which matters since this content is under
 // active iteration and is gated behind auth anyway (no shared-cache benefit).
-app.use('/members/', requireSession, express.static(GATED_DIR, {
+app.use('/members/', requireSession, requireMfa, express.static(GATED_DIR, {
   index: 'index.html',
   extensions: ['html'],
   setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
