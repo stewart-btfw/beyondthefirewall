@@ -170,10 +170,12 @@ app.get('/members/whoami', requireSession, async (req, res) => {
   // a re-login.
   let displayName = null;
   let mfaEnrolled = false;
+  let emailVerified = false;
   try {
     const userRecord = await admin.auth().getUser(req.user.uid);
     displayName = userRecord.displayName || null;
     mfaEnrolled = hasMfaEnrolled(userRecord);
+    emailVerified = !!userRecord.emailVerified;
   } catch (err) {
     console.error('whoami: could not look up user record:', err);
   }
@@ -183,6 +185,7 @@ app.get('/members/whoami', requireSession, async (req, res) => {
     ip: req.ip,
     displayName,
     mfaEnrolled,
+    emailVerified,
     isAdmin: ADMIN_EMAILS.includes(email.toLowerCase()),
   });
 });

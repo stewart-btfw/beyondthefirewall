@@ -5,6 +5,7 @@ import {
   updatePassword,
   multiFactor,
   TotpMultiFactorGenerator,
+  sendEmailVerification,
 } from 'firebase/auth';
 
 // Firebase web config is not secret (it's a public client identifier gated by
@@ -33,7 +34,9 @@ const nameSubmitBtn = document.getElementById('displayname-submit');
 const mfaCurrentStatusEl = document.getElementById('mfa-current-status');
 const mfaStartForm = document.getElementById('mfa-start-form');
 const mfaStartErrorEl = document.getElementById('mfa-start-error');
+const mfaStartInfoEl = document.getElementById('mfa-start-info');
 const mfaStartSubmitBtn = document.getElementById('mfa-start-submit');
+const verifyEmailSubmitBtn = document.getElementById('verify-email-submit');
 const mfaVerifyForm = document.getElementById('mfa-verify-form');
 const mfaSecretKeyEl = document.getElementById('mfa-secret-key');
 const mfaVerifyErrorEl = document.getElementById('mfa-verify-error');
@@ -55,6 +58,10 @@ fetch('/members/whoami')
       : 'Two-factor authentication is not currently enabled on this account.';
     if (data.mfaEnrolled) {
       mfaStartForm.classList.add('hidden');
+    } else if (!data.emailVerified) {
+      mfaCurrentStatusEl.textContent = 'Verify your email address before setting up two-factor authentication.';
+      mfaStartSubmitBtn.classList.add('hidden');
+      verifyEmailSubmitBtn.classList.remove('hidden');
     } else if (new URLSearchParams(window.location.search).get('mfa') === 'required') {
       mfaStartErrorEl.textContent = 'Two-factor authentication is required for admin accounts. Set it up below to continue.';
     }
@@ -142,6 +149,30 @@ form.addEventListener('submit', (event) => {
   event.preventDefault();
   changePassword();
 });
+
+async function sendVerificationEmail() {
+  mfaStartErrorEl.textContent = '';
+  mfaStartInfoEl.textContent = '';
+  const currentPassword = document.getElementById('mfa-current-password').value;
+  if (!currentEmail || !currentPassword) {
+    mfaStartErrorEl.textContent = 'Enter your current password first.';
+    return;
+  }
+
+  verifyEmailSubmitBtn.disabled = true;
+  try {
+    // Same fresh-sign-in requirement as the other sensitive actions below.
+    const credential = await signInWithEmailAndPassword(auth, currentEmail, currentPassword);
+    await sendEmailVerification(credential.user);
+    mfaStartInfoEl.textContent = 'Verification email sent — check your inbox, then reload this page.';
+  } catch (err) {
+    mfaStartErrorEl.textContent = 'Could not send verification email. Check your current password and try again.';
+  } finally {
+    verifyEmailSubmitBtn.disabled = false;
+  }
+}
+
+verifyEmailSubmitBtn.addEventListener('click', sendVerificationEmail);
 
 async function startMfaEnrollment() {
   mfaStartErrorEl.textContent = '';
