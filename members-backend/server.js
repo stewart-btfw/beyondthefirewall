@@ -293,6 +293,6 @@ app.use('/members/', requireSession, express.static(GATED_DIR, {
 }));
 
 const port = process.env.PORT || 8080;
-app.listen(port, () => {
-  console.log(`members-backend listening on ${port}`);
+app.listen(port, '127.0.0.1', () => {
+  console.log(`members-backend listening on 127.0.0.1:${port}`);
 });
