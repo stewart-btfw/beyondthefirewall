@@ -11,13 +11,14 @@ app.set('trust proxy', true); // nginx sets X-Forwarded-For to the real client I
 app.use(express.json());
 app.use(cookieParser());
 
-// This service also has a public *.run.app URL — Cloud Run has to stay
-// reachable from the public internet since the Pi's nginx has no private
-// network path to it, so this header is the only thing standing between
-// a direct hit and the rate limits nginx enforces in front of us on both
-// web-01 and the Pi. No-ops (doesn't block anything) if PROXY_SECRET isn't
-// set, so a missing/misconfigured secret fails open rather than taking the
-// whole members area down — make sure it's actually set on Cloud Run.
+// Holdover from when this service also had a public Cloud Run *.run.app
+// URL that nginx's rate limits didn't cover — this header was the only
+// thing standing between a direct hit and that gap. Now that the service
+// only runs on the Pi behind nginx on localhost (see infra/README.md),
+// that specific threat is gone, but the check is harmless to leave in
+// place. No-ops (doesn't block anything) if PROXY_SECRET isn't set, so a
+// missing/misconfigured secret fails open rather than taking the whole
+// members area down.
 const PROXY_SECRET = process.env.PROXY_SECRET;
 if (PROXY_SECRET) {
   app.use((req, res, next) => {
