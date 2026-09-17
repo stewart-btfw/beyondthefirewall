@@ -64,6 +64,13 @@ h1 .dim { color: var(--muted); }
   filter: grayscale(1) contrast(1.05);
 }
 
+.intro {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink);
+  margin: 0 0 1.75rem;
+}
+
 .foot {
   margin: 0;
   padding-top: 1.5rem;
