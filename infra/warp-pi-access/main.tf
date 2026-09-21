@@ -1,8 +1,11 @@
 terraform {
-  backend "gcs" {
-    bucket = "beyondthefirewall-tfstate"
-    prefix = "warp-pi-access"
-  }
+  # Local state. The GCS bucket this used to live in (beyondthefirewall-tfstate)
+  # is gone along with the rest of the beyondthefirewall GCP project — GCP is
+  # no longer used for anything in this repo. State now lives only on whatever
+  # machine runs `terraform apply`; back up terraform.tfstate somewhere safe
+  # outside git (it's gitignored) since losing it means re-importing every
+  # resource below by hand.
+  backend "local" {}
 
   required_providers {
     cloudflare = {

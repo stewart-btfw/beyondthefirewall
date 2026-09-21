@@ -37,15 +37,14 @@ live in **separate Cloudflare zones** this project doesn't hold
 before. If any of them ever diverges from `.io` in how it's routed, check
 the dashboard for that zone, not just this Terraform config.
 
-State lives in a versioned, private GCS bucket (`beyondthefirewall-tfstate`,
-prefix `warp-pi-access`), not locally. `terraform init` picks up the
-backend automatically from `main.tf`. Auth for the GCS backend uses your
-own Application Default Credentials (`gcloud auth application-default
-login`) — if that's ever reconfigured to impersonate a service account
-your account can't impersonate (as happened once already), `terraform
-init`/`plan` will fail with a `PERMISSION_DENIED` on
-`iam.serviceAccounts.getAccessToken`; fix is to rerun that login command
-without impersonation.
+State is **local** (`terraform.tfstate` in `infra/warp-pi-access/`, gitignored).
+It used to live in a GCS bucket (`beyondthefirewall-tfstate`), but that bucket
+went away along with the rest of the `beyondthefirewall` GCP project once GCP
+was fully decommissioned — nothing in this repo depends on GCP anymore.
+Whoever runs `terraform apply` needs their own copy of `terraform.tfstate`;
+back it up somewhere safe outside git, since losing it means re-`terraform
+import`-ing every resource in `main.tf` by hand before Terraform can manage
+them again.
 
 Run `terraform apply` from `infra/warp-pi-access/` — it'll prompt for
 `cloudflare_account_id`, `cloudflare_api_token` (paste at the masked
