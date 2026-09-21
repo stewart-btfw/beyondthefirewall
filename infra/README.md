@@ -37,14 +37,14 @@ live in **separate Cloudflare zones** this project doesn't hold
 before. If any of them ever diverges from `.io` in how it's routed, check
 the dashboard for that zone, not just this Terraform config.
 
-State is **local** (`terraform.tfstate` in `infra/warp-pi-access/`, gitignored).
-It used to live in a GCS bucket (`beyondthefirewall-tfstate`), but that bucket
-went away along with the rest of the `beyondthefirewall` GCP project once GCP
-was fully decommissioned — nothing in this repo depends on GCP anymore.
-Whoever runs `terraform apply` needs their own copy of `terraform.tfstate`;
-back it up somewhere safe outside git, since losing it means re-`terraform
-import`-ing every resource in `main.tf` by hand before Terraform can manage
-them again.
+State lives in a Cloudflare R2 bucket (`beyondthefirewall-tfstate`, S3-compatible
+backend), not GCS — GCP is no longer used for anything in this repo. Auth for
+the backend is an R2 (Account) API token's Access Key ID / Secret Access Key,
+supplied via the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` environment
+variables in your shell before running `terraform init`/`plan`/`apply` — never
+committed to a file, and never the same credential as `cloudflare_api_token`
+(that one's a regular Cloudflare API token for the `cloudflare` provider; this
+one's a separate R2-scoped S3 credential for the backend).
 
 Run `terraform apply` from `infra/warp-pi-access/` — it'll prompt for
 `cloudflare_account_id`, `cloudflare_api_token` (paste at the masked
