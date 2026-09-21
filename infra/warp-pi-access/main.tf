@@ -143,6 +143,17 @@ resource "cloudflare_dns_record" "pi_ssh" {
   ttl     = 1
 }
 
+# Domain-property verification for Search Console (stewart699700@icloud.com).
+# TXT records can't be proxied.
+resource "cloudflare_dns_record" "google_site_verification" {
+  zone_id = var.cloudflare_zone_id
+  name    = var.apex_hostname
+  type    = "TXT"
+  content = "google-site-verification=LYHXjLNFEcQVbSfTMPHE-8PeSvHX_xUHIm8FvyekFWo"
+  proxied = false
+  ttl     = 3600
+}
+
 # No Access application/policy in front of either hostname — deliberately
 # open to the internet. Web is low-risk; SSH is a real raw sshd exposed
 # publicly, so it depends on key-only auth (no password auth) on the Pi
