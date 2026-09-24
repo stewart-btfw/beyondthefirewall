@@ -41,7 +41,28 @@
       <dt>Language</dt><dd id="diag-lang">—</dd>
       <dt>Protocol</dt><dd id="diag-proto">—</dd>
       <dt>Edge PoP</dt><dd id="diag-colo">—</dd>
+      <dt>Round-trip (to edge)</dt><dd id="diag-rtt">—</dd>
     </dl>
+  </div>
+
+  <div class="diag">
+    <p class="diag-title">Connection path</p>
+    <svg class="path-diagram" viewBox="0 0 600 140" role="img" aria-label="Connection path: your browser, over the public internet, to the Cloudflare edge, then over an encrypted Cloudflare Tunnel to the origin Pi — the origin has no public address of its own.">
+      <line x1="84" y1="50" x2="276" y2="50" stroke="#8B96A5" stroke-width="2"></line>
+      <line x1="324" y1="50" x2="516" y2="50" stroke="#2DD4BF" stroke-width="2" stroke-dasharray="6 5"></line>
+      <circle cx="60" cy="50" r="24" fill="none" stroke="#E6EDF3" stroke-width="2"></circle>
+      <circle cx="300" cy="50" r="24" fill="none" stroke="#2DD4BF" stroke-width="2"></circle>
+      <circle cx="540" cy="50" r="24" fill="none" stroke="#E6EDF3" stroke-width="2"></circle>
+      <text x="180" y="40" text-anchor="middle" fill="#8B96A5" font-size="11" font-family="ui-monospace, monospace">public internet</text>
+      <text x="420" y="40" text-anchor="middle" fill="#2DD4BF" font-size="11" font-family="ui-monospace, monospace">encrypted tunnel</text>
+      <text x="60" y="94" text-anchor="middle" fill="#E6EDF3" font-size="12" font-family="ui-monospace, monospace">You</text>
+      <text x="300" y="94" text-anchor="middle" fill="#E6EDF3" font-size="12" font-family="ui-monospace, monospace">Cloudflare Edge</text>
+      <text x="300" y="110" text-anchor="middle" fill="#8B96A5" font-size="11" font-family="ui-monospace, monospace" id="diag-colo-label">—</text>
+      <text x="540" y="94" text-anchor="middle" fill="#E6EDF3" font-size="12" font-family="ui-monospace, monospace">Origin (Pi)</text>
+      <text x="540" y="110" text-anchor="middle" fill="#8B96A5" font-size="11" font-family="ui-monospace, monospace">no public address</text>
+    </svg>
+    <p class="diag-note">No traceroute is possible past the Cloudflare edge — the origin has no
+    routable path to trace, only an outbound tunnel connection it initiates itself.</p>
   </div>
 
   <p class="foot">Signed in via Cloudflare Access.<br><a href="/">‹ Back to the public site</a></p>

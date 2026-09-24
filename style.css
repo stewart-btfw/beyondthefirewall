@@ -102,6 +102,19 @@ h1 .dim { color: var(--muted); }
   overflow-wrap: anywhere;
 }
 
+.path-diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.diag-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 .foot {
   margin: 0;
   padding-top: 1.5rem;
