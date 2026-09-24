@@ -10,7 +10,9 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'members.html'
       - 'style.css'
+      - '*.js'
       - '*.svg'
       - 'robots.txt'
       - 'sitemap.xml'
