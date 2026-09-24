@@ -71,6 +71,37 @@ h1 .dim { color: var(--muted); }
   margin: 0 0 1.75rem;
 }
 
+.diag {
+  margin: 0 0 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.diag-title {
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.diag dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem 1.25rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.diag dt { color: var(--muted); }
+
+.diag dd {
+  margin: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
 .foot {
   margin: 0;
   padding-top: 1.5rem;
