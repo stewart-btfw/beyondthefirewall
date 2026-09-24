@@ -20,9 +20,12 @@
   updateClock();
   setInterval(updateClock, 1000);
 
-  fetch('/cdn-cgi/trace')
+  var rttStart = performance.now();
+  fetch('/cdn-cgi/trace', { cache: 'no-store' })
     .then(function (r) { return r.text(); })
     .then(function (text) {
+      set('diag-rtt', Math.round(performance.now() - rttStart) + ' ms');
+
       var data = {};
       text.trim().split('\n').forEach(function (line) {
         var i = line.indexOf('=');
@@ -31,6 +34,7 @@
 
       set('diag-ip', data.ip);
       set('diag-colo', data.colo);
+      set('diag-colo-label', data.colo);
       set('diag-proto', [data.http, data.tls].filter(Boolean).join(' / '));
 
       var country = data.loc;
@@ -44,6 +48,8 @@
       set('diag-ip');
       set('diag-loc');
       set('diag-colo');
+      set('diag-colo-label');
       set('diag-proto');
+      set('diag-rtt');
     });
 })();
