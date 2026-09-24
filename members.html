@@ -35,6 +35,8 @@
       <dt>Browser</dt><dd id="diag-browser">—</dd>
       <dt>Platform</dt><dd id="diag-platform">—</dd>
       <dt>Screen</dt><dd id="diag-screen">—</dd>
+      <dt>Date</dt><dd id="diag-date">—</dd>
+      <dt>Time</dt><dd id="diag-time">—</dd>
       <dt>Timezone</dt><dd id="diag-tz">—</dd>
       <dt>Language</dt><dd id="diag-lang">—</dd>
       <dt>Protocol</dt><dd id="diag-proto">—</dd>
@@ -58,6 +60,14 @@
   try {
     set('diag-tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
   } catch (e) {}
+
+  function updateClock() {
+    var now = new Date();
+    set('diag-date', now.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }));
+    set('diag-time', now.toLocaleTimeString());
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
 
   fetch('/cdn-cgi/trace')
     .then(function (r) { return r.text(); })
