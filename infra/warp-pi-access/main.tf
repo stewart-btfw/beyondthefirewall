@@ -1,7 +1,24 @@
 terraform {
-  backend "gcs" {
+  # State lives in Cloudflare R2 (S3-compatible), not GCS — GCP is no longer
+  # used for anything in this repo. Credentials for this backend can't be a
+  # Terraform variable (backend blocks are evaluated before variables), so
+  # they're supplied via the AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+  # environment variables at `terraform init`/`plan`/`apply` time — set them
+  # in your shell before running Terraform, never commit them to a file.
+  backend "s3" {
     bucket = "beyondthefirewall-tfstate"
-    prefix = "warp-pi-access"
+    key    = "warp-pi-access/terraform.tfstate"
+    region = "auto"
+
+    endpoints = {
+      s3 = "https://2314a9913a2e9dadad8bb6d1625aa17b.r2.cloudflarestorage.com"
+    }
+
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_s3_checksum            = true
+    use_path_style              = true
   }
 
   required_providers {
