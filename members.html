@@ -46,6 +46,31 @@
   </div>
 
   <div class="diag">
+    <p class="diag-title">Security</p>
+    <dl>
+      <dt>Key exchange</dt><dd id="diag-kex">—</dd>
+      <dt>SNI</dt><dd id="diag-sni">—</dd>
+      <dt>Cloudflare WARP</dt><dd id="diag-warp">—</dd>
+      <dt>Zero Trust Gateway</dt><dd id="diag-gateway">—</dd>
+      <dt>Secure context</dt><dd id="diag-secure">—</dd>
+      <dt>Do Not Track</dt><dd id="diag-dnt">—</dd>
+      <dt>Cookies enabled</dt><dd id="diag-cookies">—</dd>
+      <dt>Automation flag</dt><dd id="diag-webdriver">—</dd>
+      <dt>Web Crypto API</dt><dd id="diag-webcrypto">—</dd>
+    </dl>
+  </div>
+
+  <div class="diag">
+    <p class="diag-title">Page load timing</p>
+    <dl>
+      <dt>DNS lookup</dt><dd id="diag-dns">—</dd>
+      <dt>TCP connect</dt><dd id="diag-tcp">—</dd>
+      <dt>TLS handshake</dt><dd id="diag-tls-time">—</dd>
+      <dt>Time to first byte</dt><dd id="diag-ttfb">—</dd>
+    </dl>
+  </div>
+
+  <div class="diag">
     <p class="diag-title">Connection path</p>
     <svg class="path-diagram" viewBox="0 0 600 140" role="img" aria-label="Connection path: your browser, over the public internet, to the Cloudflare edge, then over an encrypted Cloudflare Tunnel to the origin Pi — the origin has no public address of its own.">
       <line x1="84" y1="50" x2="276" y2="50" stroke="#8B96A5" stroke-width="2"></line>
