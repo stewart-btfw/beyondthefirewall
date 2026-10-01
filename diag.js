@@ -20,6 +20,27 @@
   updateClock();
   setInterval(updateClock, 1000);
 
+  set('diag-secure', window.isSecureContext ? 'yes' : 'no');
+  set('diag-dnt', (navigator.doNotTrack === '1' || navigator.globalPrivacyControl) ? 'on' : 'off');
+  set('diag-cookies', navigator.cookieEnabled ? 'yes' : 'no');
+  set('diag-webdriver', navigator.webdriver ? 'detected' : 'not detected');
+  set('diag-webcrypto', (window.crypto && window.crypto.subtle) ? 'supported' : 'not supported');
+
+  try {
+    var nav = performance.getEntriesByType('navigation')[0];
+    if (nav) {
+      var dns = nav.domainLookupEnd - nav.domainLookupStart;
+      var tcp = nav.connectEnd - nav.connectStart;
+      var tls = nav.secureConnectionStart > 0 ? nav.connectEnd - nav.secureConnectionStart : 0;
+      var ttfb = nav.responseStart - nav.requestStart;
+
+      set('diag-dns', dns >= 0 ? Math.round(dns) + ' ms' : 'unavailable');
+      set('diag-tcp', tcp >= 0 ? Math.round(tcp) + ' ms' : 'unavailable');
+      set('diag-tls-time', tls > 0 ? Math.round(tls) + ' ms' : (nav.secureConnectionStart > 0 ? '0 ms' : 'unavailable'));
+      set('diag-ttfb', ttfb >= 0 ? Math.round(ttfb) + ' ms' : 'unavailable');
+    }
+  } catch (e) {}
+
   var SAMPLE_COUNT = 5;
 
   function timedFetch() {
@@ -58,6 +79,10 @@
       set('diag-colo', data.colo);
       set('diag-colo-label', data.colo);
       set('diag-proto', [data.http, data.tls].filter(Boolean).join(' / '));
+      set('diag-kex', data.kex);
+      set('diag-sni', data.sni);
+      set('diag-warp', data.warp === 'on' ? 'on' : (data.warp === 'off' ? 'off' : data.warp));
+      set('diag-gateway', data.gateway === 'on' ? 'on' : (data.gateway === 'off' ? 'off' : data.gateway));
 
       var country = data.loc;
       var label = country;
@@ -91,5 +116,9 @@
       set('diag-colo-label');
       set('diag-proto');
       set('diag-rtt');
+      set('diag-kex');
+      set('diag-sni');
+      set('diag-warp');
+      set('diag-gateway');
     });
 })();
