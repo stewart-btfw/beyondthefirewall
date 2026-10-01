@@ -51,7 +51,42 @@ Run `terraform apply` from `infra/warp-pi-access/` — it'll prompt for
 prompt, don't set it as an env var — that lands in shell history in
 plaintext), and `cloudflare_zone_id` (this is `.io`'s zone ID, even though
 the config now also touches `.me`, `.org`, `.app`, `.co.uk`, `.info`, and
-`.uk` hostnames via the tunnel ingress).
+`.uk` hostnames via the tunnel ingress). It also needs `cloudflare_team_name`
+(your Zero Trust team name) and `console_allowed_emails` (the browser-SSH
+allowlist, below) — pass these as `-var` flags or in a `.tfvars` file
+(neither is a credential, so unlike `cloudflare_api_token` they're fine to
+write down).
+
+### Browser SSH (`console.beyondthefirewall.me`)
+
+Cloudflare Access can render an SSH terminal directly in the browser —
+no backend of ours involved, Cloudflare does it — gated by the same kind
+of email-allowlist Access policy as `members.html`. It's on its own
+hostname (`console_hostname`) rather than `ssh.beyondthefirewall.io`,
+so it doesn't touch the key-only SSH access that already works today.
+
+Terraform creates the Access application, its email-allowlist policy
+(`console_allowed_emails`), the short-lived-certificate CA, and the
+tunnel ingress rule gating `ssh://localhost:22` behind that Access app.
+Three things it can't do, left for a human:
+
+1. **DNS**: add a CNAME for `console_hostname` to `<tunnel_id>.cfargotunnel.com`
+   (proxied) in the `.me` zone dashboard — same as every other `.me`
+   hostname, since this project doesn't hold that zone's `zone_id`.
+2. **Enable browser rendering**: Zero Trust > Access > Applications >
+   "Console — Browser SSH" > Configure > Advanced settings > Browser
+   rendering settings > select **SSH**. This toggle isn't exposed by the
+   Cloudflare Terraform provider yet, so it has to be flipped by hand
+   after every `terraform apply` that recreates the application.
+3. **Trust the CA on the Pi**: copy the Access application's SSH CA
+   public key (same Advanced settings screen) to the Pi, e.g.
+   `/etc/ssh/cloudflare_access_ca.pub`, add
+   `TrustedUserCAKeys /etc/ssh/cloudflare_access_ca.pub` to
+   `sshd_config` (or a file under `sshd_config.d/`), and reload sshd.
+   `connection_rules.ssh.usernames` on the Access policy already limits
+   the certificate's principal to `console_ssh_username` (`liversalts`),
+   so no `AuthorizedPrincipalsCommand` is needed — sshd's default
+   cert-principal check does the rest.
 
 ## GCP
 

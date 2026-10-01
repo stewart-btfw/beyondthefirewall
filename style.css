@@ -115,6 +115,13 @@ h1 .dim { color: var(--muted); }
   color: var(--muted);
 }
 
+.diag-note a {
+  color: var(--permit);
+  text-decoration: none;
+}
+
+.diag-note a:hover { text-decoration: underline; }
+
 .foot {
   margin: 0;
   padding-top: 1.5rem;
