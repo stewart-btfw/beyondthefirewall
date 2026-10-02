@@ -133,22 +133,19 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
   }
 }
 
-# Lets members log in as var.console_ssh_username (the Pi's one real user)
-# via the short-lived SSH certificates Access issues them, without needing
-# an individual Unix account per allowed email.
+# Gates who can open a browser SSH session. The provider version pinned
+# here (~> 5.0, resolves to 5.22.0 as of writing) has no SSH equivalent of
+# connection_rules.rdp — there's no way to remap the login username via
+# Terraform, so Cloudflare falls back to its documented default: the
+# connecting username must equal the authenticated email's local part.
+# That means a matching Unix account is required on the Pi per allowed
+# email (see infra/README.md) — there's no single shared account here.
 resource "cloudflare_zero_trust_access_policy" "console_ssh_allow" {
   account_id = var.cloudflare_account_id
   name       = "Console SSH — allowed members"
   decision   = "allow"
 
   include = [for e in var.console_allowed_emails : { email = { email = e } }]
-
-  connection_rules = {
-    ssh = {
-      usernames         = [var.console_ssh_username]
-      allow_email_alias = false
-    }
-  }
 }
 
 # type = "ssh" is what makes Cloudflare offer in-browser terminal rendering

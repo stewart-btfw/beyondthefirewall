@@ -78,15 +78,26 @@ Three things it can't do, left for a human:
    rendering settings > select **SSH**. This toggle isn't exposed by the
    Cloudflare Terraform provider yet, so it has to be flipped by hand
    after every `terraform apply` that recreates the application.
-3. **Trust the CA on the Pi**: copy the Access application's SSH CA
-   public key (same Advanced settings screen) to the Pi, e.g.
-   `/etc/ssh/cloudflare_access_ca.pub`, add
-   `TrustedUserCAKeys /etc/ssh/cloudflare_access_ca.pub` to
-   `sshd_config` (or a file under `sshd_config.d/`), and reload sshd.
-   `connection_rules.ssh.usernames` on the Access policy already limits
-   the certificate's principal to `console_ssh_username` (`liversalts`),
-   so no `AuthorizedPrincipalsCommand` is needed — sshd's default
-   cert-principal check does the rest.
+3. **Create a matching Unix account per allowed email, and trust the CA**:
+   Cloudflare's browser SSH always connects using the authenticated
+   email's local part as the login username (e.g. `stewart699700` for
+   `stewart699700@icloud.com`) — there's no Terraform-exposed way to
+   remap that to a shared account in the provider version pinned here
+   (checked against the actual installed schema, `terraform providers
+   schema -json`: `cloudflare_zero_trust_access_policy.connection_rules`
+   only has an `rdp` sub-object, no `ssh` one, despite the upstream
+   provider's own docs mentioning one — that's apparently unreleased).
+   So for each email in `console_allowed_emails`, create a matching
+   account on the Pi (`sudo useradd -m stewart699700`, set up its own
+   `~/.ssh/` as needed for anything beyond the Access-issued cert).
+   Then copy the Access application's SSH CA public key (same Advanced
+   settings screen) to the Pi, e.g. `/etc/ssh/cloudflare_access_ca.pub`,
+   add `TrustedUserCAKeys /etc/ssh/cloudflare_access_ca.pub` to
+   `sshd_config` (or a file under `sshd_config.d/`), and reload sshd —
+   sshd's default cert-principal check (principal must equal the
+   requested username) does the rest, no `AuthorizedPrincipalsCommand`
+   needed, now that principal and username are the same string by
+   construction.
 
 ## GCP
 
