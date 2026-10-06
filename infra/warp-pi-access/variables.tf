@@ -1,5 +1,5 @@
 variable "cloudflare_api_token" {
-  description = "API token with Account:Cloudflare Tunnel:Edit, Account:Access:Apps and Policies:Edit, and Zone:DNS:Edit permissions. Enter it at the masked interactive prompt only — never in a .tfvars file or as an env var (see infra/README.md)."
+  description = "API token with Account:Cloudflare Tunnel:Edit, Account:Access:Apps and Policies:Edit, Account:Access:Service Tokens:Edit, Account:Account Filter Lists:Edit and Account:Account Rulesets:Edit (bulk redirects), and Zone:DNS:Edit permissions. Enter it at the masked interactive prompt only — never in a .tfvars file or as an env var (see infra/README.md)."
   type        = string
   sensitive   = true
 }
@@ -64,7 +64,7 @@ variable "extra_site_domains" {
 }
 
 variable "console_hostname" {
-  description = "Dedicated hostname for browser-rendered SSH (Cloudflare Access renders an in-browser terminal here — it can't be a path on members.html, only a whole domain/subdomain). Separate from ssh_hostname, which stays key-only and ungated by Access. DNS for this one is dashboard-managed, not Terraform (same as the rest of the .me zone)."
+  description = "Dedicated hostname for browser-rendered SSH (Cloudflare Access renders an in-browser terminal here — it can't be a path on members.html, only a whole domain/subdomain). Separate from ssh_hostname, which is for terminal SSH clients (also Access-gated, plus a deploy service token). DNS for this one is dashboard-managed, not Terraform (same as the rest of the .me zone)."
   type        = string
   default     = "console.beyondthefirewall.me"
 }
@@ -77,4 +77,10 @@ variable "cloudflare_team_name" {
 variable "console_allowed_emails" {
   description = "Email addresses allowed to open a browser SSH session at console_hostname. Cloudflare requires each one's local part (before the @) to match a real Unix username on the Pi — see infra/README.md. Keep this in sync with whatever allowlist already gates members.html if they're meant to be the same people — that one is dashboard-managed and not visible to this Terraform."
   type        = list(string)
+}
+
+variable "canonical_domain" {
+  description = "The one domain the site is served from. Every other site hostname (apex and www of each extra_site_domains entry, .io's apex/www, and web_hostname) gets a 301 here at Cloudflare's edge — see redirects.tf. Must be one of extra_site_domains."
+  type        = string
+  default     = "beyondthefirewall.me"
 }

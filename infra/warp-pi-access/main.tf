@@ -62,9 +62,22 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
         hostname = h
         service  = "http://localhost:${var.web_port}"
       }],
+      # SSH for terminal clients (`cloudflared access ssh`). Access is
+      # enforced at the tunnel too, not just at the edge, so the connection
+      # never reaches the Pi's sshd without a valid token for
+      # cloudflare_zero_trust_access_application.ssh — even if that app's
+      # edge policy were ever misconfigured.
       [{
         hostname = var.ssh_hostname
         service  = "ssh://localhost:22"
+
+        origin_request = {
+          access = {
+            required  = true
+            team_name = var.cloudflare_team_name
+            aud_tag   = [cloudflare_zero_trust_access_application.ssh.aud]
+          }
+        }
       }],
       flatten([for d in var.extra_site_domains : [
         for h in [d, "www.${d}"] : {
@@ -195,18 +208,58 @@ resource "cloudflare_dns_record" "pi_ssh" {
   ttl     = 1
 }
 
-# No Access application/policy in front of web_hostname or ssh_hostname —
-# deliberately open to the internet. Web is low-risk; SSH is a real raw
-# sshd exposed publicly, so it depends on key-only auth (no password auth)
-# on the Pi itself as the actual security boundary now that Access isn't
-# gating it. (console_hostname above is the exception — that one *is*
-# Access-gated, specifically so Cloudflare can render an authenticated
-# browser SSH terminal there; it doesn't change anything about this pair.)
-#
-# The WARP posture check and both Access policies/applications that used to
-# gate ssh_hostname were removed here. The manually-created "Warp" posture
-# check (Zero Trust > Reusable components > Posture checks) still exists in
-# Cloudflare if this ever needs to be re-gated later.
+# ssh_hostname is gated by Cloudflare Access: a person has to log in via
+# the same email allowlist as the browser console (cloudflared opens a
+# browser on first connect), and the GitHub Actions deploy authenticates
+# with a dedicated service token instead. Key-only auth on the Pi's sshd is
+# still the second layer behind this, and web_hostname stays open (it only
+# serves the public site — and is redirected to the canonical domain, see
+# redirects.tf).
+
+# Machine identity for the deploy workflow. Its client_id/client_secret go
+# into the CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET GitHub secrets (see
+# infra/README.md). Expires after `duration` — rotate before expires_at
+# (`terraform output deploy_service_token_expires_at`) or deploys start
+# failing at the SSH step.
+resource "cloudflare_zero_trust_access_service_token" "deploy" {
+  account_id = var.cloudflare_account_id
+  name       = "GitHub Actions deploy (beyondthefirewall)"
+  duration   = "8760h"
+}
+
+resource "cloudflare_zero_trust_access_policy" "ssh_deploy_token" {
+  account_id = var.cloudflare_account_id
+  name       = "SSH — GitHub Actions deploy token"
+  decision   = "non_identity"
+
+  include = [{
+    service_token = {
+      token_id = cloudflare_zero_trust_access_service_token.deploy.id
+    }
+  }]
+}
+
+resource "cloudflare_zero_trust_access_application" "ssh" {
+  account_id = var.cloudflare_account_id
+  name       = "SSH — terminal access"
+  type       = "self_hosted"
+  domain     = var.ssh_hostname
+
+  session_duration = "24h"
+
+  # Same people as the browser console (reuses that reusable policy), plus
+  # the deploy's service token.
+  policies = [
+    {
+      id         = cloudflare_zero_trust_access_policy.console_ssh_allow.id
+      precedence = 1
+    },
+    {
+      id         = cloudflare_zero_trust_access_policy.ssh_deploy_token.id
+      precedence = 2
+    },
+  ]
+}
 
 # Edge-side SSH rate limiting used to live here as cloudflare_ruleset
 # "ssh_rate_limit". It's now managed in infra/cloudflare/rulesets.tf
