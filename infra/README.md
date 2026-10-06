@@ -132,9 +132,11 @@ torn down when this moved to the Pi, well before the project deletion.
 ## Security headers, HSTS, DNSSEC, SPF/DKIM/DMARC
 
 All applied at the Cloudflare zone level for every domain (dashboard, not
-Terraform) — HSTS (6mo, includeSubDomains on, preload off), minimum TLS
-1.2, DNSSEC, and SPF/DKIM/DMARC records that explicitly reject all mail
-(none of these domains send email). nginx also sets
+Terraform, except `.io`'s null MX — see the Terraform section above) —
+HSTS (6mo, includeSubDomains on, preload off), minimum TLS 1.2, DNSSEC,
+SPF/DKIM/DMARC records that explicitly reject all mail, and a null MX
+(RFC 7505) declaring each domain refuses mail outright (none of these
+domains send or receive email). nginx also sets
 `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a CSP.
 
 Cloudflare's "Leaked Credential Check" rate-limiting rule (the
