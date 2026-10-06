@@ -23,12 +23,20 @@ resource "cloudflare_ruleset" "waf_custom" {
   kind     = "zone"
   phase    = "http_request_firewall_custom"
 
-  rules = [{
-    description = "Block CMS/PHP scanner probes"
-    expression  = "(http.request.uri.path contains \"wp-login\") or (http.request.uri.path contains \"wp-admin\") or (http.request.uri.path contains \"xmlrpc.php\") or (ends_with(http.request.uri.path, \".php\"))"
-    action      = "block"
-    enabled     = true
-  }]
+  rules = [
+    {
+      description = "Block CMS/PHP scanner probes"
+      expression  = "(http.request.uri.path contains \"wp-login\") or (http.request.uri.path contains \"wp-admin\") or (http.request.uri.path contains \"xmlrpc.php\") or (ends_with(http.request.uri.path, \".php\"))"
+      action      = "block"
+      enabled     = true
+    },
+    {
+      description = "Block requests on non-standard ports (only 80/443 served)"
+      expression  = "not (cf.edge.server_port in {80 443})"
+      action      = "block"
+      enabled     = true
+    },
+  ]
 }
 
 import {
