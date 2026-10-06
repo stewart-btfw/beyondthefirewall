@@ -34,8 +34,13 @@ jobs:
           - beyondthefirewall.info
           - beyondthefirewall.uk
     steps:
-      # Custom UA so Cloudflare's Bot Fight Mode (on for every zone) can be
-      # told to skip challenging this specific monitor via a WAF rule,
-      # instead of weakening bot protection for everyone else.
+      # Custom UA to identify this traffic as the uptime monitor, not a
+      # generic bot — Bot Fight Mode is currently off on every zone (AI
+      # Labyrinth + crawler protection used instead), so this isn't load-
+      # bearing today. A WAF rule to skip-list this UA was tried on .me on
+      # 21 Sep 2026 and reverted four minutes later — likely because the
+      # free-plan Bot Fight Mode can't be selectively skipped by a WAF rule
+      # — so don't assume one exists if Bot Fight Mode ever gets re-enabled;
+      # check first.
       - name: Check ${{ matrix.domain }}
         run: curl -fsS -A "BTFW-Uptime-Monitor/1.0" --retry 2 --retry-delay 5 --max-time 15 "https://${{ matrix.domain }}" -o /dev/null
