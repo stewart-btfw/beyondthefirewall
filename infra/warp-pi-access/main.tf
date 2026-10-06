@@ -213,8 +213,8 @@ resource "cloudflare_dns_record" "pi_ssh" {
 # browser on first connect), and the GitHub Actions deploy authenticates
 # with a dedicated service token instead. Key-only auth on the Pi's sshd is
 # still the second layer behind this, and web_hostname stays open (it only
-# serves the public site — and is redirected to the canonical domain, see
-# redirects.tf).
+# serves the public site). All seven domains (plus web_hostname) are served
+# independently — no canonical-domain redirect.
 
 # Machine identity for the deploy workflow. Its client_id/client_secret go
 # into the CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET GitHub secrets (see

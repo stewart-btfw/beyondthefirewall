@@ -10,10 +10,6 @@ output "ssh_hostname" {
   value = var.ssh_hostname
 }
 
-output "canonical_url" {
-  value = "https://${var.canonical_domain}"
-}
-
 # Paste into the CF_ACCESS_CLIENT_ID GitHub Actions secret.
 output "deploy_service_token_client_id" {
   value = cloudflare_zero_trust_access_service_token.deploy.client_id
