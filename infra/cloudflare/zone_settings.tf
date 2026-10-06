@@ -73,11 +73,18 @@ import {
 }
 
 resource "cloudflare_bot_management" "this" {
-  for_each           = local.zones
-  zone_id            = each.value.id
-  enable_js          = true
-  fight_mode         = false
-  ai_bots_protection = "block"
+  for_each   = local.zones
+  zone_id    = each.value.id
+  enable_js  = true
+  fight_mode = false
+  # Cloudflare's API accepts "block" here but silently reverts it to
+  # "disabled" on readback (confirmed reproducibly on all 7 zones,
+  # "Provider produced inconsistent result after apply", not a Free-plan
+  # gating issue — the dashboard's "Configure AI bot policies" under
+  # Security > Bots shows no upgrade requirement). Leaving this at
+  # "disabled" to match live state until Cloudflare fixes the API/provider;
+  # AI bot blocking is configured directly via that dashboard panel instead.
+  ai_bots_protection = "disabled"
   crawler_protection = "enabled"
 }
 
