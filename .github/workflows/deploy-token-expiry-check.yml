@@ -1,0 +1,55 @@
+name: Deploy token expiry check
+
+# The GitHub Actions deploy service token (infra/warp-pi-access/main.tf,
+# cloudflare_zero_trust_access_service_token.deploy) expires 1 year after
+# creation. Terraform only exposes the actual expiry as a computed output
+# (terraform output deploy_service_token_expires_at) — there's nothing to
+# read it from at CI time without putting cloudflare_api_token in GitHub
+# secrets, which infra/README.md explicitly says never to do. So EXPIRES_AT
+# below is a plain copy of that output, kept in sync by hand.
+#
+# This check goes red (same alerting pattern as uptime-check.yml — no new
+# third-party account, just GitHub's own failed-run notification) once the
+# token is within 30 days of expiring, so there's a heads-up window to
+# rotate it before deploys start failing at the SSH step.
+#
+# After rotating (terraform apply
+# -replace=cloudflare_zero_trust_access_service_token.deploy, then updating
+# the CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET secrets), update
+# EXPIRES_AT below to the new `terraform output
+# deploy_service_token_expires_at` value in the same PR.
+#
+# Caveat: GitHub disables scheduled workflows after 60 days with no repo
+# activity — same caveat as uptime-check.yml.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch: {}
+
+permissions: {}
+
+env:
+  EXPIRES_AT: "2027-10-06T11:07:20Z"
+  WARN_WITHIN_DAYS: 30
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check deploy token expiry
+        run: |
+          now_s=$(date -u +%s)
+          expires_s=$(date -u -d "$EXPIRES_AT" +%s)
+          days_left=$(( (expires_s - now_s) / 86400 ))
+
+          if [ "$days_left" -lt 0 ]; then
+            echo "::error::Deploy service token expired $EXPIRES_AT ($(( -days_left )) days ago). Deploys are likely failing at the SSH step — rotate it now (see infra/README.md)."
+            exit 1
+          elif [ "$days_left" -le "$WARN_WITHIN_DAYS" ]; then
+            echo "::error::Deploy service token expires in $days_left days ($EXPIRES_AT). Rotate it before then (see infra/README.md)."
+            exit 1
+          else
+            echo "Deploy service token OK — expires in $days_left days ($EXPIRES_AT)."
+          fi

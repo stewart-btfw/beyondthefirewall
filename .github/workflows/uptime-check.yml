@@ -34,9 +34,8 @@ jobs:
           - beyondthefirewall.info
           - beyondthefirewall.uk
     steps:
-      # Non-canonical domains answer with a 301 to beyondthefirewall.me at
-      # Cloudflare's edge (not followed here — curl -f only fails on >= 400),
-      # so those checks confirm the edge redirect; .me's checks the Pi itself.
+      # All 7 domains are served independently (no canonical-domain
+      # redirect since PR #19), so each check hits the Pi directly.
       # Custom UA to identify this traffic as the uptime monitor, not a
       # generic bot — Bot Fight Mode is currently off on every zone (AI
       # Labyrinth + crawler protection used instead), so this isn't load-
