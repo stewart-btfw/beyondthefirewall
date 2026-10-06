@@ -207,6 +207,22 @@ resource "cloudflare_dns_record" "pi_www" {
   ttl     = 1
 }
 
+# Null MX (RFC 7505): declares the apex refuses mail outright, so a
+# sending server rejects immediately instead of retrying for days. The
+# SPF/DMARC/DKIM records already in place (dashboard-managed, not here)
+# tell receivers not to trust mail *from* this domain; this is the
+# complement — telling senders not to bother delivering mail *to* it,
+# since nothing here sends or receives email.
+resource "cloudflare_dns_record" "pi_apex_null_mx" {
+  zone_id  = var.cloudflare_zone_id
+  name     = var.apex_hostname
+  type     = "MX"
+  content  = "."
+  priority = 0
+  proxied  = false
+  ttl      = 1
+}
+
 resource "cloudflare_dns_record" "pi_ssh" {
   zone_id = var.cloudflare_zone_id
   name    = var.ssh_hostname

@@ -25,7 +25,8 @@ exactly one thing:
 
 `warp-pi-access/` manages the Cloudflare side: DNS records for `.io`
 (`web`/`ssh`/`www`/apex — all CNAMEs to the "BTFW" tunnel; the tunnel
-itself isn't Terraform-managed, we don't have its original secret), the
+itself isn't Terraform-managed, we don't have its original secret — plus
+a null MX on the apex, RFC 7505, declaring it takes no mail), the
 tunnel's ingress config (which also includes the apex/`www` hostnames for
 `.me`, `.org`, `.app`, `.co.uk`, `.info`, and `.uk`, since tunnel ingress
 is an account-level resource, not tied to a single zone), and the SSH
