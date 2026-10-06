@@ -13,7 +13,8 @@ no port forwarding on the home router). All seven domains' DNS (apex +
 |---|---|
 | Web server | nginx, config at `/etc/nginx/sites-available/raspberrypistatic.conf` |
 | Static docroot | `/var/www/html` — full git checkout of this repo |
-| SSH access | `ssh.beyondthefirewall.io` via Cloudflare Tunnel, key-only auth, edge rate-limited |
+| SSH access | `ssh.beyondthefirewall.io` via Cloudflare Tunnel, behind Cloudflare Access (email login or deploy service token), then key-only auth, edge rate-limited |
+| Canonical site | `beyondthefirewall.me` — every other site hostname 301s there at the edge (`redirects.tf`) |
 
 Deploys reach the Pi via `cloudflared access ssh` as an SSH `ProxyCommand`,
 with a forced command in `authorized_keys` so the deploy key can only do
@@ -32,6 +33,37 @@ ssh-keyscan -t ed25519 localhost | sed 's/^localhost/ssh.beyondthefirewall.io/'
 
 and paste the output into Settings → Secrets and variables → Actions →
 `PI_KNOWN_HOSTS`. Redo this if the Pi's host keys are ever regenerated.
+
+It also authenticates to Cloudflare Access with a service token (secrets
+`CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`, from
+`terraform output -raw deploy_service_token_client_id` / `..._secret`). The
+token expires a year after creation —
+`terraform output deploy_service_token_expires_at` — so rotate it
+(`terraform apply -replace=cloudflare_zero_trust_access_service_token.deploy`,
+then update both secrets) before then.
+
+### Your own SSH
+
+`ssh.beyondthefirewall.io` is behind Access, so the first `ssh` through
+`cloudflared access ssh` opens a browser to log in with an email on the
+`console_allowed_emails` allowlist; the token is then cached for 24h. A
+headless machine with no browser can't do that step — use the browser
+console instead, or a separate service token. If logins ever get blocked
+with a 429, the edge rate limit (2 requests / 10s per IP) is too tight for
+the login flow; raise `requests_per_period` in `main.tf`.
+
+### Site files the web server shouldn't serve
+
+The docroot is a full git checkout, so repo-only files (`*.md`, `infra/`)
+would otherwise be downloadable. Dotfiles (`.git/`, `.github/`) already
+404. Add this inside each `server` block of `raspberrypistatic.conf`, then
+`sudo nginx -t && sudo systemctl reload nginx`:
+
+```
+location ~* (^/infra/|\.(md|tf|hcl|example)$) {
+    return 404;
+}
+```
 
 ## Terraform
 
@@ -85,6 +117,23 @@ allowlist, below) — pass these as `-var` flags or in a `.tfvars` file
 (neither is a credential, so unlike `cloudflare_api_token` they're fine to
 write down).
 
+### Canonical redirects (`redirects.tf`)
+
+All site hostnames except `canonical_domain` (`beyondthefirewall.me`) —
+the other six apexes, every `www`, and `web.beyondthefirewall.io` — are
+301-redirected there by an account-level Bulk Redirect list + rule, keeping
+path and query string. It's account-level, so it covers the six zones whose
+DNS isn't Terraform-managed too. `ssh`/`console` hostnames are excluded.
+
+### SSH Access (`ssh.beyondthefirewall.io`)
+
+An Access application (`SSH — terminal access`) in front of the SSH
+hostname, enforced at the edge *and* at the tunnel ingress rule. Two
+policies: the same email allowlist as the browser console, and a
+`non_identity` policy for the deploy's service token. Rollout order that
+never breaks deploys: `terraform apply` → add the two `CF_ACCESS_*` secrets
+→ then merge any workflow change (nothing deploys in between).
+
 ### Browser SSH (`console.beyondthefirewall.me`)
 
 Cloudflare Access can render an SSH terminal directly in the browser —
@@ -95,7 +144,7 @@ application and its "Members Area" policy, gating `/members.html` across
 all 7 domains — check those by name in Zero Trust > Access if you ever
 need to touch that allowlist). It's on its own
 hostname (`console_hostname`) rather than `ssh.beyondthefirewall.io`,
-so it doesn't touch the key-only SSH access that already works today.
+so the in-browser terminal and terminal-client SSH stay separate Access apps.
 
 Terraform creates the Access application, its email-allowlist policy
 (`console_allowed_emails`), the short-lived-certificate CA, and the
