@@ -4,21 +4,38 @@ name: Uptime check
 # shows up red in the Actions tab and triggers GitHub's own notification
 # (email/web, per your GitHub notification settings) to whoever owns/watches
 # this repo.
+#
+# Caveat: GitHub disables scheduled workflows after 60 days with no repo
+# activity. If this repo goes quiet, re-enable it from the Actions tab (or
+# add an external monitor such as Cloudflare Health Checks) so alerting
+# doesn't silently stop.
 
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch: {}
 
+permissions: {}
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      # Check every domain even if one fails, so the run shows exactly which.
+      fail-fast: false
+      matrix:
+        domain:
+          - beyondthefirewall.me
+          - beyondthefirewall.io
+          - beyondthefirewall.org
+          - beyondthefirewall.app
+          - beyondthefirewall.co.uk
+          - beyondthefirewall.info
+          - beyondthefirewall.uk
     steps:
       # Custom UA so Cloudflare's Bot Fight Mode (on for every zone) can be
       # told to skip challenging this specific monitor via a WAF rule,
       # instead of weakening bot protection for everyone else.
-      - name: Check beyondthefirewall.me
-        run: curl -fsS -A "BTFW-Uptime-Monitor/1.0" --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.me -o /dev/null
-
-      - name: Check beyondthefirewall.io
-        run: curl -fsS -A "BTFW-Uptime-Monitor/1.0" --retry 2 --retry-delay 5 --max-time 15 https://beyondthefirewall.io -o /dev/null
+      - name: Check ${{ matrix.domain }}
+        run: curl -fsS -A "BTFW-Uptime-Monitor/1.0" --retry 2 --retry-delay 5 --max-time 15 "https://${{ matrix.domain }}" -o /dev/null

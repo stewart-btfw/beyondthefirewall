@@ -1,5 +1,5 @@
 variable "cloudflare_api_token" {
-  description = "API token with Account:Cloudflare Tunnel:Edit, Account:Access:Apps and Policies:Edit, Account:Device Posture:Edit, Zone:DNS:Edit permissions. Pass via TF_VAR_cloudflare_api_token, not tfvars."
+  description = "API token with Account:Cloudflare Tunnel:Edit, Account:Access:Apps and Policies:Edit, Zone:DNS:Edit, and Zone:WAF:Edit (for the SSH rate-limit ruleset) permissions. Enter it at the masked interactive prompt only — never in a .tfvars file or as an env var (see infra/README.md)."
   type        = string
   sensitive   = true
 }
@@ -50,76 +50,17 @@ variable "web_port" {
   default     = 80
 }
 
-variable "me_apex_hostname" {
-  description = "beyondthefirewall.me apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform, since this project only holds the .io zone_id)."
-  type        = string
-  default     = "beyondthefirewall.me"
-}
-
-variable "me_www_hostname" {
-  description = "www.beyondthefirewall.me, routed to the Pi and redirected to the apex."
-  type        = string
-  default     = "www.beyondthefirewall.me"
-}
-
-variable "org_apex_hostname" {
-  description = "beyondthefirewall.org apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
-  type        = string
-  default     = "beyondthefirewall.org"
-}
-
-variable "org_www_hostname" {
-  description = "www.beyondthefirewall.org, routed to the Pi and redirected to the apex."
-  type        = string
-  default     = "www.beyondthefirewall.org"
-}
-
-variable "app_apex_hostname" {
-  description = "beyondthefirewall.app apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
-  type        = string
-  default     = "beyondthefirewall.app"
-}
-
-variable "app_www_hostname" {
-  description = "www.beyondthefirewall.app, routed to the Pi and redirected to the apex."
-  type        = string
-  default     = "www.beyondthefirewall.app"
-}
-
-variable "co_uk_apex_hostname" {
-  description = "beyondthefirewall.co.uk apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
-  type        = string
-  default     = "beyondthefirewall.co.uk"
-}
-
-variable "co_uk_www_hostname" {
-  description = "www.beyondthefirewall.co.uk, routed to the Pi and redirected to the apex."
-  type        = string
-  default     = "www.beyondthefirewall.co.uk"
-}
-
-variable "info_apex_hostname" {
-  description = "beyondthefirewall.info apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
-  type        = string
-  default     = "beyondthefirewall.info"
-}
-
-variable "info_www_hostname" {
-  description = "www.beyondthefirewall.info, routed to the Pi and redirected to the apex."
-  type        = string
-  default     = "www.beyondthefirewall.info"
-}
-
-variable "uk_apex_hostname" {
-  description = "beyondthefirewall.uk apex, also routed to the Pi (separate zone from .io — DNS for this one is dashboard-managed, not Terraform)."
-  type        = string
-  default     = "beyondthefirewall.uk"
-}
-
-variable "uk_www_hostname" {
-  description = "www.beyondthefirewall.uk, routed to the Pi and redirected to the apex."
-  type        = string
-  default     = "www.beyondthefirewall.uk"
+variable "extra_site_domains" {
+  description = "Apex domains (besides .io) whose apex and www hostnames are routed to the Pi's website via tunnel ingress. Their DNS lives in separate Cloudflare zones and is dashboard-managed, not Terraform — this only controls tunnel ingress, which is account-level."
+  type        = list(string)
+  default = [
+    "beyondthefirewall.me",
+    "beyondthefirewall.org",
+    "beyondthefirewall.app",
+    "beyondthefirewall.co.uk",
+    "beyondthefirewall.info",
+    "beyondthefirewall.uk",
+  ]
 }
 
 variable "console_hostname" {

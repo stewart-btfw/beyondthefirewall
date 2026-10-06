@@ -6,9 +6,10 @@ console_allowed_emails = [
   "someone@example.com",
 ]
 
-# web_hostname, ssh_hostname, web_port, console_hostname use their defaults
-# from variables.tf unless overridden here.
+# web_hostname, ssh_hostname, web_port, console_hostname and
+# extra_site_domains use their defaults from variables.tf unless overridden
+# here.
 
-# cloudflare_api_token is intentionally omitted — set it via:
-#   set "TF_VAR_cloudflare_api_token=..."
-# so it never lands in a file that could get committed.
+# cloudflare_api_token is intentionally omitted — paste it at the masked
+# prompt `terraform plan`/`apply` shows. Don't put it in this file or in a
+# TF_VAR_ env var (that lands in shell history in plaintext).

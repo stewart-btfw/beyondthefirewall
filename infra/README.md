@@ -19,7 +19,19 @@ Deploys reach the Pi via `cloudflared access ssh` as an SSH `ProxyCommand`,
 with a forced command in `authorized_keys` so the deploy key can only do
 exactly one thing:
 
-- [`deploy-site.yml`](../.github/workflows/deploy-site.yml) — static site changes (`index.html`, `style.css`, etc.) trigger a `git pull` in `/var/www/html`
+- [`deploy-site.yml`](../.github/workflows/deploy-site.yml) — static site changes (`index.html`, `style.css`, images, etc.) trigger a `git pull` in `/var/www/html`
+
+The workflow pins `cloudflared` to a specific release and verifies its
+SHA-256, and checks the Pi's SSH host key against the `PI_KNOWN_HOSTS`
+repo secret (it refuses to connect if that's unset). To (re)generate that
+secret's value, run on the Pi:
+
+```
+ssh-keyscan -t ed25519 localhost | sed 's/^localhost/ssh.beyondthefirewall.io/'
+```
+
+and paste the output into Settings → Secrets and variables → Actions →
+`PI_KNOWN_HOSTS`. Redo this if the Pi's host keys are ever regenerated.
 
 ## Terraform
 

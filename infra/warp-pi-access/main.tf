@@ -38,83 +38,38 @@ provider "cloudflare" {
 # Not declared as a managed resource here — we don't know its original
 # config_src/tunnel_secret, so we just point config/DNS at its known ID.
 
-# Routes both hostnames through the existing tunnel to services on the Pi.
+# Routes every site hostname (all seven domains) plus SSH and the console
+# through the existing tunnel to services on the Pi.
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
   account_id = var.cloudflare_account_id
   tunnel_id  = var.tunnel_id
   source     = "cloudflare"
 
   config = {
-    ingress = [
-      {
-        hostname = var.web_hostname
+    # Order matters (first match wins) and is kept identical to the old
+    # hand-written list, so this refactor plans as a no-op: .io web/apex/www,
+    # .io ssh, then apex + www for every other domain, then the
+    # Access-gated console, then the catch-all 404.
+    ingress = concat(
+      [for h in [var.web_hostname, var.apex_hostname, var.www_hostname] : {
+        hostname = h
         service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.apex_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.www_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
+      }],
+      [{
         hostname = var.ssh_hostname
         service  = "ssh://localhost:22"
-      },
-      {
-        hostname = var.me_apex_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.me_www_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.org_apex_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.org_www_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.app_apex_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.app_www_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.co_uk_apex_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.co_uk_www_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.info_apex_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.info_www_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.uk_apex_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
-      {
-        hostname = var.uk_www_hostname
-        service  = "http://localhost:${var.web_port}"
-      },
+      }],
+      flatten([for d in var.extra_site_domains : [
+        for h in [d, "www.${d}"] : {
+          hostname = h
+          service  = "http://localhost:${var.web_port}"
+        }
+      ]]),
       # Browser-rendered SSH console. Unlike every other ingress rule above,
       # this one requires Access authorization at the tunnel itself — the
       # connection never reaches the Pi's sshd unless it already carries a
       # valid token for cloudflare_zero_trust_access_application.console_ssh.
-      {
+      [{
         hostname = var.console_hostname
         service  = "ssh://localhost:22"
 
@@ -125,11 +80,11 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
             aud_tag   = [cloudflare_zero_trust_access_application.console_ssh.aud]
           }
         }
-      },
-      {
+      }],
+      [{
         service = "http_status:404"
-      },
-    ]
+      }],
+    )
   }
 }
 
