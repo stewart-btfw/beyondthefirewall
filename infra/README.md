@@ -100,6 +100,14 @@ if a zone's config ever looks like it's drifted from what either project
 declares, that's real drift (someone changed it by hand), not an
 intentionally-unmanaged setting.
 
+**Allowlist drift risk:** `members_area` (`cloudflare/access.tf`, a
+literal two-email list in source) and `console_allowed_emails`
+(`warp-pi-access`'s variable, sourced from your local `.tfvars`, not
+committed) are two separate lists in two separate state files/projects —
+Terraform can't cross-reference them, so nothing enforces they stay the
+same set of people. If these are meant to be the same two users, update
+both by hand whenever either changes; there's no automated check for this.
+
 State lives in a Cloudflare R2 bucket (`beyondthefirewall-tfstate`, S3-compatible
 backend), not GCS — GCP is no longer used for anything in this repo. Auth for
 the backend is an R2 (Account) API token's Access Key ID / Secret Access Key,
