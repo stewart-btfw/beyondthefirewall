@@ -34,6 +34,9 @@ jobs:
           - beyondthefirewall.info
           - beyondthefirewall.uk
     steps:
+      # Non-canonical domains answer with a 301 to beyondthefirewall.me at
+      # Cloudflare's edge (not followed here — curl -f only fails on >= 400),
+      # so those checks confirm the edge redirect; .me's checks the Pi itself.
       # Custom UA so Cloudflare's Bot Fight Mode (on for every zone) can be
       # told to skip challenging this specific monitor via a WAF rule,
       # instead of weakening bot protection for everyone else.
