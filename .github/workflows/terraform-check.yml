@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dir: [infra/warp-pi-access]
+        dir: [infra/warp-pi-access, infra/cloudflare]
     defaults:
       run:
         working-directory: ${{ matrix.dir }}

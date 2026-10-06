@@ -1,23 +1,15 @@
 # Reusable Access policies --------------------------------------------------
-
-resource "cloudflare_zero_trust_access_policy" "console_ssh" {
-  account_id       = local.account_id
-  name             = "Console SSH — allowed members"
-  decision         = "allow"
-  session_duration = "8h"
-  include = [
-    { email = { email = "sandrews@natilik.com" } },
-    { email = { email = "stewart699700@icloud.com" } },
-  ]
-}
+#
+# "Console SSH — allowed members" (a63b54db-…) intentionally not here —
+# infra/warp-pi-access/main.tf already manages it as console_ssh_allow.
 
 resource "cloudflare_zero_trust_access_policy" "members_area" {
   account_id = local.account_id
   name       = "Members Area"
   decision   = "allow"
   include = [
-    { email = { email = "stewart.andrews@gmail.com" } },
-    { email = { email = "699700@proton.me" } },
+    # stewart.andrews@gmail.com and 699700@proton.me removed — both
+    # accounts were confirmed deleted; see infra/README.md history.
     { email = { email = "stewart699700@icloud.com" } },
     { email = { email = "sandrews@natilik.com" } },
   ]
@@ -33,10 +25,6 @@ resource "cloudflare_zero_trust_access_policy" "warp_enrolment" {
   ]
 }
 
-import {
-  to = cloudflare_zero_trust_access_policy.console_ssh
-  id = "${local.account_id}/a63b54db-b556-449d-87f7-51c21894ca34"
-}
 import {
   to = cloudflare_zero_trust_access_policy.members_area
   id = "${local.account_id}/425964e8-6b24-44d5-9d18-e2cc02694980"
@@ -57,20 +45,14 @@ resource "cloudflare_zero_trust_access_application" "ssh_io" {
   session_duration           = "8h"
   app_launcher_visible       = false
   http_only_cookie_attribute = true
-  policies                   = [{ id = cloudflare_zero_trust_access_policy.console_ssh.id, precedence = 1 }]
+  # References "Console SSH — allowed members" by its literal ID since that
+  # policy is owned by infra/warp-pi-access/main.tf (a separate Terraform
+  # state) — can't be a resource reference across projects.
+  policies = [{ id = "a63b54db-b556-449d-87f7-51c21894ca34", precedence = 1 }]
 }
 
-resource "cloudflare_zero_trust_access_application" "console_ssh" {
-  account_id                 = local.account_id
-  name                       = "Console — Browser SSH"
-  type                       = "ssh"
-  domain                     = "console.beyondthefirewall.me"
-  destinations               = [{ type = "public", uri = "console.beyondthefirewall.me" }]
-  session_duration           = "8h"
-  app_launcher_visible       = true
-  http_only_cookie_attribute = true
-  policies                   = [{ id = cloudflare_zero_trust_access_policy.console_ssh.id, precedence = 1 }]
-}
+# "Console — Browser SSH" (f4053001-…) intentionally not here —
+# infra/warp-pi-access/main.tf already manages it as console_ssh.
 
 resource "cloudflare_zero_trust_access_application" "members_area" {
   account_id                 = local.account_id
@@ -87,10 +69,6 @@ resource "cloudflare_zero_trust_access_application" "members_area" {
 import {
   to = cloudflare_zero_trust_access_application.ssh_io
   id = "accounts/${local.account_id}/1fb1bfb5-361c-42fd-b75a-3da05125799d"
-}
-import {
-  to = cloudflare_zero_trust_access_application.console_ssh
-  id = "accounts/${local.account_id}/f4053001-5195-452c-bfcd-b0b1d502ddb1"
 }
 import {
   to = cloudflare_zero_trust_access_application.members_area

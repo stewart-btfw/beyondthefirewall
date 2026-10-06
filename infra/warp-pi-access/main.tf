@@ -46,6 +46,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
   source     = "cloudflare"
 
   config = {
+    # Enables routing WARP client traffic through this tunnel (Zero Trust
+    # private network access). Confirmed live via the full-account
+    # Terraform import in infra/cloudflare/ — not something this project
+    # turned on itself, but it must stay declared here or a plain `apply`
+    # of this project alone would silently disable it.
+    warp_routing = { enabled = true }
+
     # Order matters (first match wins) and is kept identical to the old
     # hand-written list, so this refactor plans as a no-op: .io web/apex/www,
     # .io ssh, then apex + www for every other domain, then the
@@ -200,32 +207,9 @@ resource "cloudflare_dns_record" "pi_ssh" {
 # check (Zero Trust > Reusable components > Posture checks) still exists in
 # Cloudflare if this ever needs to be re-gated later.
 
-# Edge-side rate limiting on SSH connection attempts. fail2ban on the Pi
-# itself can't work here — sshd only ever sees 127.0.0.1 as the source,
-# since Cloudflare Tunnel proxies every connection through localhost. This
-# runs at Cloudflare's edge instead, where the real source IP is still
-# visible. action = "block" (not "challenge") since an SSH client can't
-# solve a browser challenge.
-resource "cloudflare_ruleset" "ssh_rate_limit" {
-  zone_id     = var.cloudflare_zone_id
-  name        = "SSH connection rate limit"
-  description = "Block IPs making excessive connection attempts to the Pi's SSH tunnel hostname"
-  phase       = "http_ratelimit"
-  kind        = "zone"
-
-  rules = [{
-    description = "Rate limit ssh connection attempts"
-    expression  = "(http.host eq \"${var.ssh_hostname}\")"
-    action      = "block"
-
-    # Free zone plan is restricted to a 10s period and 10s mitigation_timeout
-    # (larger values return "not entitled" 400s), so an offending IP gets
-    # re-evaluated every 10s rather than a single longer block.
-    ratelimit = {
-      characteristics     = ["ip.src", "cf.colo.id"]
-      period              = 10
-      requests_per_period = 2
-      mitigation_timeout  = 10
-    }
-  }]
-}
+# Edge-side SSH rate limiting used to live here as cloudflare_ruleset
+# "ssh_rate_limit". It's now managed in infra/cloudflare/rulesets.tf
+# instead, alongside the equivalent per-zone rate limiting for the other
+# 6 domains — the live rule had already grown beyond "just SSH" (it also
+# covers /members.html) before this move, so it fit the website-wide
+# project better than this Pi-specific one.

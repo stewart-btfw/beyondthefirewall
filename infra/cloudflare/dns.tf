@@ -23,11 +23,9 @@ locals {
     info_txt_spf        = { zone = "info", name = "beyondthefirewall.info", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "e1b1484d8289114c69fe862a138dfc21" }
     info_txt_dmarc      = { zone = "info", name = "_dmarc.beyondthefirewall.info", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:c095a29f90d84739b7625eb78f709e61@dmarc-reports.cloudflare.net;\"", proxied = false, id = "adaeab1c2b8f315b2fb06af2b1681bf0" }
     info_txt_dkim_null  = { zone = "info", name = "*._domainkey.beyondthefirewall.info", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "a45dc8b146a7c905ddb3381a0c275759" }
-    io_cname_apex       = { zone = "io", name = "beyondthefirewall.io", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "8a7c7d191a2dc4be0eaa5a98e313a608" }
-    io_cname_ssh        = { zone = "io", name = "ssh.beyondthefirewall.io", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "6bcae0815381b6f0b48b065ca1fb44aa" }
-    io_cname_web        = { zone = "io", name = "web.beyondthefirewall.io", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "6683d96d6bf1d54e095b70163bfc3a62" }
-    io_cname_www        = { zone = "io", name = "www.beyondthefirewall.io", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "4c485b99d937bfee829551a2ec0c6e0c" }
-    io_mx_null          = { zone = "io", name = "beyondthefirewall.io", type = "MX", content = ".", proxied = false, priority = 0, id = "ede2df58742f27bbe68bbcd5551ef22f" }
+    # io_cname_apex, io_cname_ssh, io_cname_web, io_cname_www, io_mx_null
+    # intentionally not here — infra/warp-pi-access/main.tf already manages
+    # these 5 as pi_apex/pi_ssh/pi_web/pi_www/pi_apex_null_mx.
     io_txt_google       = { zone = "io", name = "beyondthefirewall.io", type = "TXT", content = "\"google-site-verification=8UyXLg9eubpqhtjvbBFSAU3eRwixbMLr4OXzN-p0Rkk\"", proxied = false, id = "3a1542d8041bb22a147ebba8800dcb5e" }
     io_txt_spf          = { zone = "io", name = "beyondthefirewall.io", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "c6f19846908b6caa3d1294394c76df96" }
     io_txt_dmarc        = { zone = "io", name = "_dmarc.beyondthefirewall.io", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:881bce5765064fd9be6396acb0272200@dmarc-reports.cloudflare.net;\"", proxied = false, id = "94a4e61992271d153b527a8e67f53489" }

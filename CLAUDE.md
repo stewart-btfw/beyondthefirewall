@@ -33,16 +33,17 @@ current by whoever maintains this repo.
 
 There is no root `package.json`, and no test suite anywhere in this repo.
 
-**Terraform** (`cd infra/warp-pi-access`):
+**Terraform** (`cd infra/warp-pi-access` or `cd infra/cloudflare` — two
+separate projects, see Infra below):
 ```
 terraform init
 terraform plan
 terraform apply
 ```
-State is remote (Cloudflare R2 bucket `beyondthefirewall-tfstate`,
-S3-compatible backend). Never put `cloudflare_api_token` in a `.tfvars`
-file or env var — enter it at the masked interactive prompt only (see
-`infra/README.md` for why).
+State is remote for both (Cloudflare R2 bucket `beyondthefirewall-tfstate`,
+S3-compatible backend, separate key per project). Never put
+`cloudflare_api_token` in a `.tfvars` file or env var — enter it at the
+masked interactive prompt only (see `infra/README.md` for why).
 
 ## Architecture
 
@@ -71,11 +72,24 @@ staging environment or manual approval gate.
 
 ### Infra (`infra/`)
 
-`warp-pi-access/` is the only Terraform project in this repo: Cloudflare
-Tunnel ingress routing all seven domains to the Pi, DNS records, a
-browser-SSH console gated by Cloudflare Access, and edge-side SSH
-rate-limiting (fail2ban can't work here since Cloudflare Tunnel makes
-every SSH connection appear to come from 127.0.0.1). R2 remote state.
+Two Terraform projects, deliberately separate (own state key, own API
+token each — see `infra/README.md`'s Terraform section for exactly which
+resources each one owns and why):
+
+- `warp-pi-access/` — the original, Pi-specific project: Cloudflare
+  Tunnel ingress routing all seven domains to the Pi, `.io`'s tunnel
+  CNAME/MX DNS records, and the browser-SSH console's Access
+  application/policy/certificate.
+- `cloudflare/` — broader, added 6 Oct 2026 as a bulk `import` of what
+  had been dashboard-only: the rest of the DNS across all 7 zones,
+  zone-level settings (TLS/HSTS/DNSSEC/bot management), WAF/rate-limit/
+  security-header rulesets, the Members Area and SSH-`.io` Access apps,
+  and tunnel health notifications.
+
+Both projects now hold all 7 zones' `zone_id`s — none of this is
+dashboard-only anymore. If a zone's live config ever looks like it's
+drifted from what either project declares, that's real drift (changed by
+hand since), not an intentionally-unmanaged setting.
 
 (A former `prisma-mtls/` demo — mTLS client-cert gating via Prisma
 Access Browser, fronting its own Cloud Run service — used to live here
@@ -83,9 +97,3 @@ too. Both its GCP and Cloudflare halves were torn down and the directory
 deleted once the `beyondthefirewall` GCP project itself was shut down;
 see the GCP section of `infra/README.md` if this ever comes up in git
 history.)
-
-Only `.io`'s DNS is Terraform-managed here (`cloudflare_zone_id` in
-`warp-pi-access` is always `.io`'s zone). The other six domains' DNS records
-live in separate Cloudflare zones this project doesn't hold zone IDs for and
-are dashboard-managed — if one of them seems to be routed differently than
-`.io`, check that zone's dashboard, not this Terraform.
