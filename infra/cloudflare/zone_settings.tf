@@ -73,10 +73,10 @@ import {
 }
 
 resource "cloudflare_bot_management" "this" {
-  for_each           = local.zones
-  zone_id            = each.value.id
-  enable_js          = true
-  fight_mode         = false
+  for_each   = local.zones
+  zone_id    = each.value.id
+  enable_js  = true
+  fight_mode = false
   # Cloudflare's API accepts "block" here but silently reverts it to
   # "disabled" on readback (confirmed reproducibly on all 7 zones,
   # "Provider produced inconsistent result after apply", not a Free-plan
