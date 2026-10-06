@@ -214,6 +214,17 @@ balancer stack, the `members-backend` Cloud Run service, the
 Federation setup, the `proxy-shared-secret` Secret Manager secret — was
 torn down when this moved to the Pi, well before the project deletion.
 
+## Scripts
+
+`infra/scripts/zone_request_counts.py` — read-only, ranks the 7 zones by
+HTTP request volume over a lookback window (default 7 days) via
+Cloudflare's GraphQL Analytics API. Run it locally (`python3
+infra/scripts/zone_request_counts.py`); it prompts for an API token
+(masked, same convention as Terraform) rather than taking one as an
+argument or env var set by the script. Needs a token scoped with at least
+"Zone Analytics: Read" on all 7 zones — the Terraform token's scopes don't
+cover Analytics, so use a separate read-only one.
+
 ## Security headers, HSTS, DNSSEC, SPF/DKIM/DMARC
 
 All applied at the Cloudflare zone level for every domain (dashboard, not
