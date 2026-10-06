@@ -62,7 +62,11 @@ write down).
 
 Cloudflare Access can render an SSH terminal directly in the browser —
 no backend of ours involved, Cloudflare does it — gated by the same kind
-of email-allowlist Access policy as `members.html`. It's on its own
+of email-allowlist Access policy as `members.html` (dashboard-built and
+dashboard-managed, not Terraform: the "Members Area" self-hosted
+application and its "Members Area" policy, gating `/members.html` across
+all 7 domains — check those by name in Zero Trust > Access if you ever
+need to touch that allowlist). It's on its own
 hostname (`console_hostname`) rather than `ssh.beyondthefirewall.io`,
 so it doesn't touch the key-only SSH access that already works today.
 
@@ -110,27 +114,14 @@ Authentication were removed (Node app deleted, DNS/WAF rules for
 `members-backend@beyondthefirewall.iam.gserviceaccount.com` and its key
 on the Pi went with the project.
 
-**One loose end this leaves**: `infra/prisma-mtls/cloudflare/main.tf`
-still manages *live* Cloudflare resources — an mTLS certificate upload,
-a hostname-certificate association, and an Access policy/application —
-gating `beyondthefirewall.me/members/*`. Those were paired with
-`infra/prisma-mtls/gcp/`'s load balancer + Cloud Run service, which no
-longer exist now that the project is gone. The Cloudflare side is now
-orphaned (gating a destination that 404s/times out, not a real backend)
-rather than merely "queued for teardown." Next time you have the
-Cloudflare API token handy:
-
-```
-cd infra/prisma-mtls/cloudflare
-terraform destroy
-```
-
-Also worth checking the `.me` zone dashboard for any leftover DNS record
-pointing `members.beyondthefirewall.me` at the old GCP load balancer's
-IP — that's dashboard-managed, not Terraform, so `destroy` above won't
-touch it. Once both are cleared, `infra/prisma-mtls/` (both halves) can
-be deleted from this repo entirely rather than kept as a teardown
-reminder.
+The `infra/prisma-mtls/` demo (mTLS client-cert gating via Prisma Access
+Browser, fronting a dedicated Cloud Run service) is gone entirely —
+both its GCP half and its Cloudflare half (the mTLS certificate upload,
+hostname-certificate association, and Access policy/application it
+created) were already cleaned up by the time the GCP project was
+deleted, confirmed directly in the dashboard (no matching Access
+application, policy, or mTLS certificate remain). The directory itself
+has been deleted from this repo — there's nothing left to track.
 
 Everything else — `web-01`, the old `members.beyondthefirewall.me` load
 balancer stack, the `members-backend` Cloud Run service, the
