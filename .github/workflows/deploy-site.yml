@@ -1,19 +1,22 @@
 name: Deploy marketing site
 
 # Pulls the latest static site files onto the Raspberry Pi's docroot, which
-# serves both beyondthefirewall.io and beyondthefirewall.me (Cloudflare
-# Tunnel routes both hostnames there — see infra/warp-pi-access/). Pushing
-# here doesn't update the live site by itself, this workflow does.
+# serves all seven beyondthefirewall.* domains (Cloudflare Tunnel routes
+# them all there — see infra/warp-pi-access/). Pushing here doesn't update
+# the live site by itself, this workflow does.
 
 on:
   push:
     branches: [main]
     paths:
-      - 'index.html'
-      - 'members.html'
-      - 'style.css'
+      - '*.html'
+      - '*.css'
       - '*.js'
       - '*.svg'
+      - '*.png'
+      - '*.gif'
+      - '*.webp'
+      - '*.ico'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/deploy-site.yml'
@@ -22,29 +25,54 @@ on:
 permissions:
   contents: read
 
+# Never run two deploys against the Pi at once.
+concurrency:
+  group: deploy-pi
+  cancel-in-progress: false
+
+env:
+  # Pinned rather than "latest" so a compromised or broken upstream release
+  # can't silently land in the deploy path. To upgrade: pick a release from
+  # https://github.com/cloudflare/cloudflared/releases and copy the
+  # cloudflared-linux-amd64 SHA-256 from its release notes.
+  CLOUDFLARED_VERSION: '2026.10.0'
+  CLOUDFLARED_SHA256: 'd33ff2d14475178d2012c2c56beba87389ac5ded27649519f198a7d3134a99db'
+
 jobs:
   deploy-pi:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Install cloudflared
+      - name: Install cloudflared (pinned + checksum-verified)
         run: |
-          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
-          chmod +x /usr/local/bin/cloudflared
+          curl -fsSL "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-amd64" -o cloudflared
+          echo "${CLOUDFLARED_SHA256}  cloudflared" | sha256sum -c -
+          sudo install -m 0755 cloudflared /usr/local/bin/cloudflared
+          cloudflared --version
 
       - name: Pull latest on the Pi
         env:
           SSH_KEY: ${{ secrets.PI_DEPLOY_SSH_KEY }}
+          # The Pi's SSH host key line(s), keyed to ssh.beyondthefirewall.io.
+          # Generate on the Pi with:
+          #   ssh-keyscan -t ed25519 localhost | sed 's/^localhost/ssh.beyondthefirewall.io/'
+          KNOWN_HOSTS: ${{ secrets.PI_KNOWN_HOSTS }}
         run: |
-          mkdir -p ~/.ssh
+          if [ -z "$KNOWN_HOSTS" ]; then
+            echo "::error::PI_KNOWN_HOSTS secret is not set — refusing to connect without a pinned host key."
+            exit 1
+          fi
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/pi_deploy_key
-          chmod 600 ~/.ssh/pi_deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/pi_deploy_key ~/.ssh/known_hosts
           # The Pi's authorized_keys forces this connection straight into
           # `cd /var/www/html && git pull` regardless of what's requested
           # here, so the trailing `true` is just a placeholder command.
           ssh -i ~/.ssh/pi_deploy_key \
             -o ProxyCommand="cloudflared access ssh --hostname %h" \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
             -o BatchMode=yes \
             -o ConnectTimeout=15 \
             liversalts@ssh.beyondthefirewall.io true
