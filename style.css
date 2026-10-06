@@ -121,6 +121,7 @@ h1 .dim { color: var(--muted); }
 }
 
 .diag-note a:hover { text-decoration: underline; }
+.diag-note a:focus-visible { outline: 2px solid var(--permit); outline-offset: 2px; }
 
 .foot {
   margin: 0;
@@ -138,3 +139,4 @@ h1 .dim { color: var(--muted); }
 }
 
 .foot a:hover { text-decoration: underline; }
+.foot a:focus-visible { outline: 2px solid var(--permit); outline-offset: 2px; }
