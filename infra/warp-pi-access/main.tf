@@ -257,18 +257,6 @@ data "cloudflare_zero_trust_access_application" "ssh_io" {
 # instead, alongside the equivalent per-zone rate limiting for the other
 # 6 domains — the live rule had already grown beyond "just SSH" (it also
 # covers /members.html) before this move, so it fit the website-wide
-# project better than this Pi-specific one.
-#
-# `removed` (not a plain deletion) so this project drops it from its own
-# state without calling destroy on the live object — infra/cloudflare
-# already imported that same ruleset ID as ratelimit["io"], so an actual
-# destroy here would briefly drop live rate limiting until re-applied
-# there. This block can be deleted once this project's state no longer
-# has the resource (i.e. after the first apply following this change).
-removed {
-  from = cloudflare_ruleset.ssh_rate_limit
-
-  lifecycle {
-    destroy = false
-  }
-}
+# project better than this Pi-specific one. The `removed` block that
+# handed it off (without destroying the live object) has been applied and
+# is gone from this project's state, so it's been dropped here too.
