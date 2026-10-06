@@ -36,7 +36,9 @@ import {
   id       = "${local.zones[each.value.zone].id}/${each.value.setting}"
 }
 
-# HSTS: 6 months, includeSubDomains, no preload, nosniff on.
+# HSTS: 1 year, includeSubDomains, preload, nosniff on. hstspreload.org
+# requires max_age >= 31536000 (1 year) alongside includeSubDomains and
+# preload before it will accept a submission.
 resource "cloudflare_zone_setting" "security_header" {
   for_each   = local.zones
   zone_id    = each.value.id
@@ -44,9 +46,9 @@ resource "cloudflare_zone_setting" "security_header" {
   value = {
     strict_transport_security = {
       enabled            = true
-      max_age            = 15552000
+      max_age            = 31536000
       include_subdomains = true
-      preload            = false
+      preload            = true
       nosniff            = true
     }
   }
