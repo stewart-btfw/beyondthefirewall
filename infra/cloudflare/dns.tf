@@ -26,32 +26,32 @@ locals {
     # io_cname_apex, io_cname_ssh, io_cname_web, io_cname_www, io_mx_null
     # intentionally not here — infra/warp-pi-access/main.tf already manages
     # these 5 as pi_apex/pi_ssh/pi_web/pi_www/pi_apex_null_mx.
-    io_txt_google       = { zone = "io", name = "beyondthefirewall.io", type = "TXT", content = "\"google-site-verification=8UyXLg9eubpqhtjvbBFSAU3eRwixbMLr4OXzN-p0Rkk\"", proxied = false, id = "3a1542d8041bb22a147ebba8800dcb5e" }
-    io_txt_spf          = { zone = "io", name = "beyondthefirewall.io", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "c6f19846908b6caa3d1294394c76df96" }
-    io_txt_dmarc        = { zone = "io", name = "_dmarc.beyondthefirewall.io", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:881bce5765064fd9be6396acb0272200@dmarc-reports.cloudflare.net;\"", proxied = false, id = "94a4e61992271d153b527a8e67f53489" }
-    io_txt_dkim_null    = { zone = "io", name = "*._domainkey.beyondthefirewall.io", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "2c9aa87698308f435ede612914ca7012" }
-    me_cname_apex       = { zone = "me", name = "beyondthefirewall.me", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "6290cdf8e56f03dba8922e77239329e2" }
-    me_cname_console    = { zone = "me", name = "console.beyondthefirewall.me", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "f76c73770d2986fe05890ac03ff75786" }
-    me_cname_www        = { zone = "me", name = "www.beyondthefirewall.me", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "f6ecb4298b0ebec755b49763c872c399" }
-    me_mx_null          = { zone = "me", name = "beyondthefirewall.me", type = "MX", content = ".", proxied = false, priority = 0, id = "baaec87211677f67bfa7a8d236eb600c" }
-    me_txt_google       = { zone = "me", name = "beyondthefirewall.me", type = "TXT", content = "\"google-site-verification=DKVtqehc-apr0765DZXhpLBiJvOJnkCrFZlAgM4tgyM\"", proxied = false, id = "e53e2ad38677e7695e304ac6f2f42f1e" }
-    me_txt_spf          = { zone = "me", name = "beyondthefirewall.me", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "1815f501653cf7bad9ca9bc8b8c5164e" }
-    me_txt_dmarc        = { zone = "me", name = "_dmarc.beyondthefirewall.me", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:26583bd84f4a4f2881e8d156b9995668@dmarc-reports.cloudflare.net;\"", proxied = false, id = "e2851ae8bf73a267ba88ca396a9abae2" }
-    me_txt_dkim_null    = { zone = "me", name = "*._domainkey.beyondthefirewall.me", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "8644f27673fd11d8f5b0286d745118f8" }
-    org_cname_apex      = { zone = "org", name = "beyondthefirewall.org", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "197c9664287347ce324da51d8f3ef12b" }
-    org_cname_www       = { zone = "org", name = "www.beyondthefirewall.org", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "f3381db1b5c5f967827e5bc28317b479" }
-    org_mx_null         = { zone = "org", name = "beyondthefirewall.org", type = "MX", content = ".", proxied = false, priority = 0, id = "f9593ec42910f3280ffaeb072254b1a1" }
-    org_txt_google      = { zone = "org", name = "beyondthefirewall.org", type = "TXT", content = "\"google-site-verification=GH-JNWE9CmoF0ZGEDN7bKDKxhq1CNdrHZhls3_2gniE\"", proxied = false, id = "9c6e5a84abd88d029323136f25479626" }
-    org_txt_spf         = { zone = "org", name = "beyondthefirewall.org", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "b0b54f9499a40774f539b1793b794363" }
-    org_txt_dmarc       = { zone = "org", name = "_dmarc.beyondthefirewall.org", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:efe9667a2bd24a7b905b015af71fdbee@dmarc-reports.cloudflare.net;\"", proxied = false, id = "c1f0c389aabbe0e010fdb0365dc26090" }
-    org_txt_dkim_null   = { zone = "org", name = "*._domainkey.beyondthefirewall.org", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "18732727dc39a5d18ccefca9f476d753" }
-    uk_cname_apex       = { zone = "uk", name = "beyondthefirewall.uk", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "21568077855a59e1b7b1c8c3148fa867" }
-    uk_cname_www        = { zone = "uk", name = "www.beyondthefirewall.uk", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "ea7ed2b5934aea563530bb0de0cd0ebe" }
-    uk_mx_null          = { zone = "uk", name = "beyondthefirewall.uk", type = "MX", content = ".", proxied = false, priority = 0, id = "315818c1a73bb978692607c1d8cd2608" }
-    uk_txt_google       = { zone = "uk", name = "beyondthefirewall.uk", type = "TXT", content = "\"google-site-verification=O2wrGd94XCbWyrKn_jyvDq53IjNKwkYHIGSyYLGnT_o\"", proxied = false, id = "d983d1f593ace626fcbade260c23b70f" }
-    uk_txt_spf          = { zone = "uk", name = "beyondthefirewall.uk", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "9b3a68900658b31f44633c9b79a1f089" }
-    uk_txt_dmarc        = { zone = "uk", name = "_dmarc.beyondthefirewall.uk", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:a2a6e37047144866b36a40c719dfe490@dmarc-reports.cloudflare.net;\"", proxied = false, id = "534fcd8a395731c508636822f12b058c" }
-    uk_txt_dkim_null    = { zone = "uk", name = "*._domainkey.beyondthefirewall.uk", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "c4633de8e42ecc456f53430d26c647f4" }
+    io_txt_google     = { zone = "io", name = "beyondthefirewall.io", type = "TXT", content = "\"google-site-verification=8UyXLg9eubpqhtjvbBFSAU3eRwixbMLr4OXzN-p0Rkk\"", proxied = false, id = "3a1542d8041bb22a147ebba8800dcb5e" }
+    io_txt_spf        = { zone = "io", name = "beyondthefirewall.io", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "c6f19846908b6caa3d1294394c76df96" }
+    io_txt_dmarc      = { zone = "io", name = "_dmarc.beyondthefirewall.io", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:881bce5765064fd9be6396acb0272200@dmarc-reports.cloudflare.net;\"", proxied = false, id = "94a4e61992271d153b527a8e67f53489" }
+    io_txt_dkim_null  = { zone = "io", name = "*._domainkey.beyondthefirewall.io", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "2c9aa87698308f435ede612914ca7012" }
+    me_cname_apex     = { zone = "me", name = "beyondthefirewall.me", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "6290cdf8e56f03dba8922e77239329e2" }
+    me_cname_console  = { zone = "me", name = "console.beyondthefirewall.me", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "f76c73770d2986fe05890ac03ff75786" }
+    me_cname_www      = { zone = "me", name = "www.beyondthefirewall.me", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "f6ecb4298b0ebec755b49763c872c399" }
+    me_mx_null        = { zone = "me", name = "beyondthefirewall.me", type = "MX", content = ".", proxied = false, priority = 0, id = "baaec87211677f67bfa7a8d236eb600c" }
+    me_txt_google     = { zone = "me", name = "beyondthefirewall.me", type = "TXT", content = "\"google-site-verification=DKVtqehc-apr0765DZXhpLBiJvOJnkCrFZlAgM4tgyM\"", proxied = false, id = "e53e2ad38677e7695e304ac6f2f42f1e" }
+    me_txt_spf        = { zone = "me", name = "beyondthefirewall.me", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "1815f501653cf7bad9ca9bc8b8c5164e" }
+    me_txt_dmarc      = { zone = "me", name = "_dmarc.beyondthefirewall.me", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:26583bd84f4a4f2881e8d156b9995668@dmarc-reports.cloudflare.net;\"", proxied = false, id = "e2851ae8bf73a267ba88ca396a9abae2" }
+    me_txt_dkim_null  = { zone = "me", name = "*._domainkey.beyondthefirewall.me", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "8644f27673fd11d8f5b0286d745118f8" }
+    org_cname_apex    = { zone = "org", name = "beyondthefirewall.org", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "197c9664287347ce324da51d8f3ef12b" }
+    org_cname_www     = { zone = "org", name = "www.beyondthefirewall.org", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "f3381db1b5c5f967827e5bc28317b479" }
+    org_mx_null       = { zone = "org", name = "beyondthefirewall.org", type = "MX", content = ".", proxied = false, priority = 0, id = "f9593ec42910f3280ffaeb072254b1a1" }
+    org_txt_google    = { zone = "org", name = "beyondthefirewall.org", type = "TXT", content = "\"google-site-verification=GH-JNWE9CmoF0ZGEDN7bKDKxhq1CNdrHZhls3_2gniE\"", proxied = false, id = "9c6e5a84abd88d029323136f25479626" }
+    org_txt_spf       = { zone = "org", name = "beyondthefirewall.org", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "b0b54f9499a40774f539b1793b794363" }
+    org_txt_dmarc     = { zone = "org", name = "_dmarc.beyondthefirewall.org", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:efe9667a2bd24a7b905b015af71fdbee@dmarc-reports.cloudflare.net;\"", proxied = false, id = "c1f0c389aabbe0e010fdb0365dc26090" }
+    org_txt_dkim_null = { zone = "org", name = "*._domainkey.beyondthefirewall.org", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "18732727dc39a5d18ccefca9f476d753" }
+    uk_cname_apex     = { zone = "uk", name = "beyondthefirewall.uk", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "21568077855a59e1b7b1c8c3148fa867" }
+    uk_cname_www      = { zone = "uk", name = "www.beyondthefirewall.uk", type = "CNAME", content = local.tunnel_cname, proxied = true, id = "ea7ed2b5934aea563530bb0de0cd0ebe" }
+    uk_mx_null        = { zone = "uk", name = "beyondthefirewall.uk", type = "MX", content = ".", proxied = false, priority = 0, id = "315818c1a73bb978692607c1d8cd2608" }
+    uk_txt_google     = { zone = "uk", name = "beyondthefirewall.uk", type = "TXT", content = "\"google-site-verification=O2wrGd94XCbWyrKn_jyvDq53IjNKwkYHIGSyYLGnT_o\"", proxied = false, id = "d983d1f593ace626fcbade260c23b70f" }
+    uk_txt_spf        = { zone = "uk", name = "beyondthefirewall.uk", type = "TXT", content = "\"v=spf1 -all\"", proxied = false, id = "9b3a68900658b31f44633c9b79a1f089" }
+    uk_txt_dmarc      = { zone = "uk", name = "_dmarc.beyondthefirewall.uk", type = "TXT", content = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:a2a6e37047144866b36a40c719dfe490@dmarc-reports.cloudflare.net;\"", proxied = false, id = "534fcd8a395731c508636822f12b058c" }
+    uk_txt_dkim_null  = { zone = "uk", name = "*._domainkey.beyondthefirewall.uk", type = "TXT", content = "\"v=DKIM1; p=\"", proxied = false, id = "c4633de8e42ecc456f53430d26c647f4" }
   }
 }
 
