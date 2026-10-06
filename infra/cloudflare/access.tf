@@ -21,7 +21,12 @@ resource "cloudflare_zero_trust_access_policy" "warp_enrolment" {
   decision         = "allow"
   session_duration = "24h"
   include = [
-    { ip = { ip = "82.163.151.25/32" } },
+    # Tightened from an IP allow-rule (82.163.151.25/32) to the same
+    # two-email allowlist as members_area — "only two users should have
+    # any access" (Stew, 2026-10-06). An IP rule grants any device on that
+    # network, not a specific person.
+    { email = { email = "stewart699700@icloud.com" } },
+    { email = { email = "sandrews@natilik.com" } },
   ]
 }
 

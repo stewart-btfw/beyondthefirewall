@@ -14,7 +14,7 @@ no port forwarding on the home router). All seven domains' DNS (apex +
 | Web server | nginx, config at `/etc/nginx/sites-available/raspberrypistatic.conf` |
 | Static docroot | `/var/www/html` — full git checkout of this repo |
 | SSH access | `ssh.beyondthefirewall.io` via Cloudflare Tunnel, behind Cloudflare Access (email login or deploy service token), then key-only auth, edge rate-limited |
-| Canonical site | `beyondthefirewall.me` — every other site hostname 301s there at the edge (`redirects.tf`) |
+| Site hostnames | All seven domains (apex + `www`) are served independently — no canonical-domain redirect |
 
 Deploys reach the Pi via `cloudflared access ssh` as an SSH `ProxyCommand`,
 with a forced command in `authorized_keys` so the deploy key can only do
@@ -116,14 +116,6 @@ the config now also touches `.me`, `.org`, `.app`, `.co.uk`, `.info`, and
 allowlist, below) — pass these as `-var` flags or in a `.tfvars` file
 (neither is a credential, so unlike `cloudflare_api_token` they're fine to
 write down).
-
-### Canonical redirects (`redirects.tf`)
-
-All site hostnames except `canonical_domain` (`beyondthefirewall.me`) —
-the other six apexes, every `www`, and `web.beyondthefirewall.io` — are
-301-redirected there by an account-level Bulk Redirect list + rule, keeping
-path and query string. It's account-level, so it covers the six zones whose
-DNS isn't Terraform-managed too. `ssh`/`console` hostnames are excluded.
 
 ### SSH Access (`ssh.beyondthefirewall.io`)
 
