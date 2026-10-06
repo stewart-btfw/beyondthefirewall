@@ -57,9 +57,19 @@ jobs:
           # Generate on the Pi with:
           #   ssh-keyscan -t ed25519 localhost | sed 's/^localhost/ssh.beyondthefirewall.io/'
           KNOWN_HOSTS: ${{ secrets.PI_KNOWN_HOSTS }}
+          # Cloudflare Access service token for ssh.beyondthefirewall.io
+          # (terraform output deploy_service_token_client_id / _secret).
+          # cloudflared reads these env vars for `access ssh`, so they never
+          # appear on a command line.
+          TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           if [ -z "$KNOWN_HOSTS" ]; then
             echo "::error::PI_KNOWN_HOSTS secret is not set — refusing to connect without a pinned host key."
+            exit 1
+          fi
+          if [ -z "$TUNNEL_SERVICE_TOKEN_ID" ] || [ -z "$TUNNEL_SERVICE_TOKEN_SECRET" ]; then
+            echo "::error::CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET secrets are not set — ssh.beyondthefirewall.io is behind Cloudflare Access and needs them."
             exit 1
           fi
           mkdir -p ~/.ssh && chmod 700 ~/.ssh

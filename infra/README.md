@@ -13,7 +13,8 @@ no port forwarding on the home router). All seven domains' DNS (apex +
 |---|---|
 | Web server | nginx, config at `/etc/nginx/sites-available/raspberrypistatic.conf` |
 | Static docroot | `/var/www/html` — full git checkout of this repo |
-| SSH access | `ssh.beyondthefirewall.io` via Cloudflare Tunnel, key-only auth, edge rate-limited |
+| SSH access | `ssh.beyondthefirewall.io` via Cloudflare Tunnel, behind Cloudflare Access (email login or deploy service token), then key-only auth, edge rate-limited |
+| Canonical site | `beyondthefirewall.me` — every other site hostname 301s there at the edge (`redirects.tf`) |
 
 Deploys reach the Pi via `cloudflared access ssh` as an SSH `ProxyCommand`,
 with a forced command in `authorized_keys` so the deploy key can only do
@@ -33,22 +34,67 @@ ssh-keyscan -t ed25519 localhost | sed 's/^localhost/ssh.beyondthefirewall.io/'
 and paste the output into Settings → Secrets and variables → Actions →
 `PI_KNOWN_HOSTS`. Redo this if the Pi's host keys are ever regenerated.
 
+It also authenticates to Cloudflare Access with a service token (secrets
+`CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`, from
+`terraform output -raw deploy_service_token_client_id` / `..._secret`). The
+token expires a year after creation —
+`terraform output deploy_service_token_expires_at` — so rotate it
+(`terraform apply -replace=cloudflare_zero_trust_access_service_token.deploy`,
+then update both secrets) before then.
+
+### Your own SSH
+
+`ssh.beyondthefirewall.io` is behind Access, so the first `ssh` through
+`cloudflared access ssh` opens a browser to log in with an email on the
+`console_allowed_emails` allowlist; the token is then cached for 24h. A
+headless machine with no browser can't do that step — use the browser
+console instead, or a separate service token. If logins ever get blocked
+with a 429, the edge rate limit (2 requests / 10s per IP) is too tight for
+the login flow; raise `requests_per_period` in `main.tf`.
+
+### Site files the web server shouldn't serve
+
+The docroot is a full git checkout, so repo-only files (`*.md`, `infra/`)
+would otherwise be downloadable. Dotfiles (`.git/`, `.github/`) already
+404. Add this inside each `server` block of `raspberrypistatic.conf`, then
+`sudo nginx -t && sudo systemctl reload nginx`:
+
+```
+location ~* (^/infra/|\.(md|tf|hcl|example)$) {
+    return 404;
+}
+```
+
 ## Terraform
 
-`warp-pi-access/` manages the Cloudflare side: DNS records for `.io`
-(`web`/`ssh`/`www`/apex — all CNAMEs to the "BTFW" tunnel; the tunnel
-itself isn't Terraform-managed, we don't have its original secret — plus
-a null MX on the apex, RFC 7505, declaring it takes no mail), the
-tunnel's ingress config (which also includes the apex/`www` hostnames for
-`.me`, `.org`, `.app`, `.co.uk`, `.info`, and `.uk`, since tunnel ingress
-is an account-level resource, not tied to a single zone), and the SSH
-rate-limiting ruleset.
+Two separate Terraform projects, same R2 state bucket, different keys,
+different API tokens — deliberately not one project, so the Pi-specific
+stuff stays small and independently applicable.
 
-`.me`, `.org`, `.app`, `.co.uk`, `.info`, and `.uk`'s actual DNS records
-live in **separate Cloudflare zones** this project doesn't hold
-`zone_id`s for, so they're dashboard-managed, not Terraform — same as
-before. If any of them ever diverges from `.io` in how it's routed, check
-the dashboard for that zone, not just this Terraform config.
+`warp-pi-access/` is the original, Pi-specific project: the tunnel's
+ingress config (every hostname routed through it, across all 7 domains —
+tunnel ingress is account-level, not tied to a zone), `.io`'s 5 tunnel
+CNAME/MX DNS records (`web`/`ssh`/`www`/apex, plus a null MX, RFC 7505),
+and the browser-SSH console's Access application/policy/certificate. It
+also declares `warp_routing = { enabled = true }` on the tunnel config —
+not something this project turned on, just something that has to stay
+declared so a plain `apply` here doesn't silently disable it.
+
+`cloudflare/` is broader: the rest of the DNS across all 7 zones (SPF/
+DMARC/DKIM/Google-verification TXT records, and the other 6 domains'
+tunnel CNAMEs), zone-level settings (TLS, HSTS, DNSSEC, bot management)
+for all 7 zones, WAF/rate-limiting/security-header rulesets for all 7
+zones, the Members Area and SSH-`.io` Access apps, and tunnel health
+notifications. It was brought in as a bulk `import` of what had been
+dashboard-only config — see its own README for exactly what it does and
+doesn't cover, and why a few resources are deliberately left out (they're
+`warp-pi-access`'s).
+
+Both projects hold all 7 zones' `zone_id`s now (`cloudflare/locals.tf`),
+so "dashboard-managed, not Terraform" no longer applies to any of this —
+if a zone's config ever looks like it's drifted from what either project
+declares, that's real drift (someone changed it by hand), not an
+intentionally-unmanaged setting.
 
 State lives in a Cloudflare R2 bucket (`beyondthefirewall-tfstate`, S3-compatible
 backend), not GCS — GCP is no longer used for anything in this repo. Auth for
@@ -57,7 +103,8 @@ supplied via the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` environment
 variables in your shell before running `terraform init`/`plan`/`apply` — never
 committed to a file, and never the same credential as `cloudflare_api_token`
 (that one's a regular Cloudflare API token for the `cloudflare` provider; this
-one's a separate R2-scoped S3 credential for the backend).
+one's a separate R2-scoped S3 credential for the backend, shared by both
+projects).
 
 Run `terraform apply` from `infra/warp-pi-access/` — it'll prompt for
 `cloudflare_account_id`, `cloudflare_api_token` (paste at the masked
@@ -70,6 +117,28 @@ allowlist, below) — pass these as `-var` flags or in a `.tfvars` file
 (neither is a credential, so unlike `cloudflare_api_token` they're fine to
 write down).
 
+### Canonical redirects (`redirects.tf`)
+
+All site hostnames except `canonical_domain` (`beyondthefirewall.me`) —
+the other six apexes, every `www`, and `web.beyondthefirewall.io` — are
+301-redirected there by an account-level Bulk Redirect list + rule, keeping
+path and query string. It's account-level, so it covers the six zones whose
+DNS isn't Terraform-managed too. `ssh`/`console` hostnames are excluded.
+
+### SSH Access (`ssh.beyondthefirewall.io`)
+
+Gated by `ssh_io`, the Access application `infra/cloudflare/access.tf`
+already owns for this hostname (imported by the Oct 2026 bulk import) —
+`warp-pi-access` doesn't create a second one; Cloudflare only allows one
+Access app per hostname. It adds a second policy to that existing app
+instead: the deploy's `non_identity` service-token policy
+(`ssh_deploy_token`), alongside the email allowlist the app already had.
+Enforced at the edge *and* at the tunnel ingress rule (the latter reads
+`ssh_io`'s `aud` via a data source, since the app itself lives in the
+other project's state). Rollout order that never breaks deploys:
+`terraform apply` → add the two `CF_ACCESS_*` secrets → then merge any
+workflow change (nothing deploys in between).
+
 ### Browser SSH (`console.beyondthefirewall.me`)
 
 Cloudflare Access can render an SSH terminal directly in the browser —
@@ -80,7 +149,7 @@ application and its "Members Area" policy, gating `/members.html` across
 all 7 domains — check those by name in Zero Trust > Access if you ever
 need to touch that allowlist). It's on its own
 hostname (`console_hostname`) rather than `ssh.beyondthefirewall.io`,
-so it doesn't touch the key-only SSH access that already works today.
+so the in-browser terminal and terminal-client SSH stay separate Access apps.
 
 Terraform creates the Access application, its email-allowlist policy
 (`console_allowed_emails`), the short-lived-certificate CA, and the
