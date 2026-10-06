@@ -102,28 +102,41 @@ Three things it can't do, left for a human:
 
 ## GCP
 
-The member/login area and Firebase Authentication have been removed
-entirely (Node app deleted, DNS/WAF rules for `/members/*` cleaned up —
-see git history around the removal commit for what changed). The
-`beyondthefirewall` GCP project is no longer used for the live site at
-all; the only things left in it are:
-
-- The `beyondthefirewall-tfstate` GCS bucket (fractions of a cent/month,
-  unrelated to hosting — just where this Terraform project's state lives)
-- The `infra/prisma-mtls/` demo (Prisma Access Browser client-cert
-  gating), separately queued for teardown — see that Terraform's own
-  state/comments
-
+The `beyondthefirewall` GCP project has been fully shut down and
+deleted — nothing of this repo's hosting or infrastructure depends on
+GCP anymore, and hasn't since the member/login area and Firebase
+Authentication were removed (Node app deleted, DNS/WAF rules for
+`/members/*` cleaned up — see git history around the removal commit).
 `members-backend@beyondthefirewall.iam.gserviceaccount.com` and its key
-on the Pi are no longer used and can be deleted/revoked next time GCP
-access is available.
+on the Pi went with the project.
+
+**One loose end this leaves**: `infra/prisma-mtls/cloudflare/main.tf`
+still manages *live* Cloudflare resources — an mTLS certificate upload,
+a hostname-certificate association, and an Access policy/application —
+gating `beyondthefirewall.me/members/*`. Those were paired with
+`infra/prisma-mtls/gcp/`'s load balancer + Cloud Run service, which no
+longer exist now that the project is gone. The Cloudflare side is now
+orphaned (gating a destination that 404s/times out, not a real backend)
+rather than merely "queued for teardown." Next time you have the
+Cloudflare API token handy:
+
+```
+cd infra/prisma-mtls/cloudflare
+terraform destroy
+```
+
+Also worth checking the `.me` zone dashboard for any leftover DNS record
+pointing `members.beyondthefirewall.me` at the old GCP load balancer's
+IP — that's dashboard-managed, not Terraform, so `destroy` above won't
+touch it. Once both are cleared, `infra/prisma-mtls/` (both halves) can
+be deleted from this repo entirely rather than kept as a teardown
+reminder.
 
 Everything else — `web-01`, the old `members.beyondthefirewall.me` load
 balancer stack, the `members-backend` Cloud Run service, the
 `github-actions-deploy` service account and its Workload Identity
 Federation setup, the `proxy-shared-secret` Secret Manager secret — was
-torn down when this moved to the Pi. If you see any of those names again
-in GCP, something didn't get cleaned up.
+torn down when this moved to the Pi, well before the project deletion.
 
 ## Security headers, HSTS, DNSSEC, SPF/DKIM/DMARC
 

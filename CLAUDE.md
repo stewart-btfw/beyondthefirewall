@@ -22,8 +22,10 @@ current by whoever maintains this repo.
 
 ## Repo layout
 
-- `index.html`, `style.css`, `*.svg`, `robots.txt`, `sitemap.xml`, `waiting.gif`
-  — the public marketing site. No build step; these files are served as-is.
+- `index.html`, `members.html`, `style.css`, `diag.js`, `*.svg`, `robots.txt`,
+  `sitemap.xml`, `waiting.gif` — the public marketing site plus the
+  Access-gated members page and its client-side connection diagnostics. No
+  build step; these files are served as-is.
 - `infra/` — Terraform, split by concern (see below).
 - `.github/workflows/` — the deploy/monitoring pipelines.
 
@@ -37,8 +39,9 @@ terraform init
 terraform plan
 terraform apply
 ```
-`warp-pi-access` state is remote (GCS bucket `beyondthefirewall-tfstate`);
-the other two directories have no backend block configured. Never put
+`warp-pi-access` state is remote (Cloudflare R2 bucket
+`beyondthefirewall-tfstate`, S3-compatible backend); the other two
+directories have no backend block configured. Never put
 `cloudflare_api_token` in a `.tfvars` file or env var — enter it at the
 masked interactive prompt only (see `infra/README.md` for why).
 
@@ -53,8 +56,8 @@ fixed command server-side (`git pull`) — the SSH command in the workflow
 YAML (`... true`) is just a placeholder, it has no effect on what actually
 runs.
 
-- `deploy-site.yml` triggers on changes to `index.html`, `style.css`, `*.svg`,
-  `robots.txt`, `sitemap.xml`.
+- `deploy-site.yml` triggers on changes to `index.html`, `members.html`,
+  `style.css`, `*.js`, `*.svg`, `robots.txt`, `sitemap.xml`.
 - `uptime-check.yml` runs every 15 minutes, hits both domains' homepage —
   a failing run is the only alerting in place.
 
@@ -64,18 +67,22 @@ staging environment or manual approval gate.
 ### Infra (`infra/`)
 
 - `warp-pi-access/` — the real, deployed infra: Cloudflare Tunnel ingress
-  routing all seven domains to the Pi, DNS records, and edge-side SSH
-  rate-limiting (fail2ban can't work here since Cloudflare Tunnel makes
-  every SSH connection appear to come from 127.0.0.1). GCS remote state.
+  routing all seven domains to the Pi, DNS records, a browser-SSH console
+  gated by Cloudflare Access, and edge-side SSH rate-limiting (fail2ban
+  can't work here since Cloudflare Tunnel makes every SSH connection
+  appear to come from 127.0.0.1). R2 remote state.
 - `prisma-mtls/` — a separate, isolated demo/prototype (mTLS client-cert
-  gating via Prisma Access Browser) fronting its own dedicated Cloud Run
+  gating via Prisma Access Browser) that fronted a dedicated Cloud Run
   service (`members-backend-demo`) at `members.beyondthefirewall.me`,
-  unrelated to anything else in this repo. Has both a `cloudflare/` and a
-  `gcp/` half that must be applied together (GCP owns the mTLS-terminating
-  load balancer + managed cert; Cloudflare owns the matching CA upload +
-  non-identity Access policy). No remote state backend configured for
-  either half. Currently queued for teardown — see the GCP section of
-  `infra/README.md`.
+  unrelated to anything else in this repo. Had both a `cloudflare/` and a
+  `gcp/` half (GCP owned the mTLS-terminating load balancer + managed
+  cert; Cloudflare owned the matching CA upload + non-identity Access
+  policy). **The GCP project has since been fully shut down and
+  deleted** — the `gcp/` half's resources no longer exist, so the
+  `cloudflare/` half's resources (still live) now gate a destination
+  that's gone. Needs `terraform destroy` run from `cloudflare/` next time
+  the API token is handy, then both halves can be deleted from the repo —
+  see the GCP section of `infra/README.md`.
 
 Only `.io`'s DNS is Terraform-managed here (`cloudflare_zone_id` in
 `warp-pi-access` is always `.io`'s zone). The other six domains' DNS records
