@@ -134,12 +134,6 @@ variable "cloudflare_team_name" {
 }
 
 variable "console_allowed_emails" {
-  description = "Email addresses allowed to open a browser SSH session at console_hostname. Keep this in sync with whatever allowlist already gates members.html if they're meant to be the same people — that one is dashboard-managed and not visible to this Terraform."
+  description = "Email addresses allowed to open a browser SSH session at console_hostname. Cloudflare requires each one's local part (before the @) to match a real Unix username on the Pi — see infra/README.md. Keep this in sync with whatever allowlist already gates members.html if they're meant to be the same people — that one is dashboard-managed and not visible to this Terraform."
   type        = list(string)
-}
-
-variable "console_ssh_username" {
-  description = "Unix username on the Pi that browser SSH sessions log in as. The Pi has one real user (liversalts); anyone who passes the console_allowed_emails policy gets a shell as this user — access control happens entirely at the Access policy layer, not via per-person Unix accounts."
-  type        = string
-  default     = "liversalts"
 }
