@@ -60,7 +60,7 @@ actually runs.
 - `deploy-site.yml` triggers on changes to top-level `*.html`, `*.css`,
   `*.js`, image files (`*.svg`, `*.png`, `*.gif`, `*.webp`, `*.ico`),
   `robots.txt`, `sitemap.xml`. Secrets: `PI_DEPLOY_SSH_KEY`,
-  `PI_KNOWN_HOSTS`.
+  `PI_KNOWN_HOSTS`, `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`.
 - `uptime-check.yml` runs every 15 minutes, hits all seven domains'
   homepages — a failing run is the only alerting in place. GitHub disables
   scheduled workflows after 60 days of repo inactivity.
@@ -78,8 +78,12 @@ resources each one owns and why):
 
 - `warp-pi-access/` — the original, Pi-specific project: Cloudflare
   Tunnel ingress routing all seven domains to the Pi, `.io`'s tunnel
-  CNAME/MX DNS records, and the browser-SSH console's Access
-  application/policy/certificate.
+  CNAME/MX DNS records, the browser-SSH console's Access
+  application/policy/certificate, terminal SSH also behind Access (deploy
+  uses a service token), canonical-domain Bulk Redirects to `.me`
+  (`redirects.tf`), and edge-side SSH rate-limiting (fail2ban can't work
+  here since Cloudflare Tunnel makes every SSH connection appear to come
+  from 127.0.0.1).
 - `cloudflare/` — broader, added 6 Oct 2026 as a bulk `import` of what
   had been dashboard-only: the rest of the DNS across all 7 zones,
   zone-level settings (TLS/HSTS/DNSSEC/bot management), WAF/rate-limit/
