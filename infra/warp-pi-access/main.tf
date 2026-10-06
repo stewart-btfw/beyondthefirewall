@@ -248,8 +248,8 @@ resource "cloudflare_zero_trust_access_policy" "ssh_deploy_token" {
 # this data source reads ssh_io's aud back for the tunnel ingress rule
 # below, since that app isn't a resource in this state.
 data "cloudflare_zero_trust_access_application" "ssh_io" {
-  account_id     = var.cloudflare_account_id
-  application_id = "1fb1bfb5-361c-42fd-b75a-3da05125799d"
+  account_id = var.cloudflare_account_id
+  app_id     = "1fb1bfb5-361c-42fd-b75a-3da05125799d"
 }
 
 # Edge-side SSH rate limiting used to live here as cloudflare_ruleset
