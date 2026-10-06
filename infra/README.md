@@ -151,6 +151,14 @@ SPF/DKIM/DMARC records that explicitly reject all mail, and a null MX
 domains send or receive email). nginx also sets
 `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a CSP.
 
+Cloudflare also injects a `Permissions-Policy` header (`camera=(),
+microphone=(), geolocation=(), payment=(), usb=()`) at the edge — a
+Transform Rule, not nginx, since the static site has no reason to touch
+any of those browser APIs. Confirmed live via `curl -sI` against `.io`;
+dashboard-managed like the rest of this section, so check there (Rules >
+Transform Rules > Modify Response Header, or similar) if it ever needs
+changing or extending to the other zones.
+
 Cloudflare's "Leaked Credential Check" rate-limiting rule (the
 `cf.waf.credential_check.password_leaked` template, under Security >
 Settings > "Rate limit authentication requests") is live on `.me`, `.org`,
