@@ -45,10 +45,16 @@ resource "cloudflare_zero_trust_access_application" "ssh_io" {
   session_duration           = "8h"
   app_launcher_visible       = false
   http_only_cookie_attribute = true
-  # References "Console SSH — allowed members" by its literal ID since that
-  # policy is owned by infra/warp-pi-access/main.tf (a separate Terraform
-  # state) — can't be a resource reference across projects.
-  policies = [{ id = "a63b54db-b556-449d-87f7-51c21894ca34", precedence = 1 }]
+  # References both policies by literal ID since they're owned by
+  # infra/warp-pi-access/main.tf (a separate Terraform state) — can't be a
+  # resource reference across projects. "SSH — GitHub Actions deploy
+  # token" (ssh_deploy_token) was added alongside the deploy service
+  # token rather than a second Access application on this hostname —
+  # Cloudflare only allows one per hostname.
+  policies = [
+    { id = "a63b54db-b556-449d-87f7-51c21894ca34", precedence = 1 },
+    { id = "fa21dc2b-4083-491a-847c-3a75de1e37cf", precedence = 2 },
+  ]
 }
 
 # "Console — Browser SSH" (f4053001-…) intentionally not here —

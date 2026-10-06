@@ -127,12 +127,17 @@ DNS isn't Terraform-managed too. `ssh`/`console` hostnames are excluded.
 
 ### SSH Access (`ssh.beyondthefirewall.io`)
 
-An Access application (`SSH — terminal access`) in front of the SSH
-hostname, enforced at the edge *and* at the tunnel ingress rule. Two
-policies: the same email allowlist as the browser console, and a
-`non_identity` policy for the deploy's service token. Rollout order that
-never breaks deploys: `terraform apply` → add the two `CF_ACCESS_*` secrets
-→ then merge any workflow change (nothing deploys in between).
+Gated by `ssh_io`, the Access application `infra/cloudflare/access.tf`
+already owns for this hostname (imported by the Oct 2026 bulk import) —
+`warp-pi-access` doesn't create a second one; Cloudflare only allows one
+Access app per hostname. It adds a second policy to that existing app
+instead: the deploy's `non_identity` service-token policy
+(`ssh_deploy_token`), alongside the email allowlist the app already had.
+Enforced at the edge *and* at the tunnel ingress rule (the latter reads
+`ssh_io`'s `aud` via a data source, since the app itself lives in the
+other project's state). Rollout order that never breaks deploys:
+`terraform apply` → add the two `CF_ACCESS_*` secrets → then merge any
+workflow change (nothing deploys in between).
 
 ### Browser SSH (`console.beyondthefirewall.me`)
 

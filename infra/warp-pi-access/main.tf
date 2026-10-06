@@ -65,7 +65,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
       # SSH for terminal clients (`cloudflared access ssh`). Access is
       # enforced at the tunnel too, not just at the edge, so the connection
       # never reaches the Pi's sshd without a valid token for
-      # cloudflare_zero_trust_access_application.ssh — even if that app's
+      # infra/cloudflare's "ssh_io" Access application — even if that app's
       # edge policy were ever misconfigured.
       [{
         hostname = var.ssh_hostname
@@ -75,7 +75,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
           access = {
             required  = true
             team_name = var.cloudflare_team_name
-            aud_tag   = [cloudflare_zero_trust_access_application.ssh.aud]
+            aud_tag   = [data.cloudflare_zero_trust_access_application.ssh_io.aud]
           }
         }
       }],
@@ -239,26 +239,17 @@ resource "cloudflare_zero_trust_access_policy" "ssh_deploy_token" {
   }]
 }
 
-resource "cloudflare_zero_trust_access_application" "ssh" {
-  account_id = var.cloudflare_account_id
-  name       = "SSH — terminal access"
-  type       = "self_hosted"
-  domain     = var.ssh_hostname
-
-  session_duration = "24h"
-
-  # Same people as the browser console (reuses that reusable policy), plus
-  # the deploy's service token.
-  policies = [
-    {
-      id         = cloudflare_zero_trust_access_policy.console_ssh_allow.id
-      precedence = 1
-    },
-    {
-      id         = cloudflare_zero_trust_access_policy.ssh_deploy_token.id
-      precedence = 2
-    },
-  ]
+# Cloudflare only allows one Access application per hostname, and
+# ssh_hostname already has one: infra/cloudflare/access.tf's "ssh_io"
+# (imported by #17, predates this policy existing to add). So this project
+# adds ssh_deploy_token to that application instead of creating a second
+# one — infra/cloudflare/access.tf references this policy's ID by literal
+# string (same cross-state pattern used for console_ssh_allow there), and
+# this data source reads ssh_io's aud back for the tunnel ingress rule
+# below, since that app isn't a resource in this state.
+data "cloudflare_zero_trust_access_application" "ssh_io" {
+  account_id     = var.cloudflare_account_id
+  application_id = "1fb1bfb5-361c-42fd-b75a-3da05125799d"
 }
 
 # Edge-side SSH rate limiting used to live here as cloudflare_ruleset
