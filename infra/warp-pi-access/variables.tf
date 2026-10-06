@@ -1,5 +1,5 @@
 variable "cloudflare_api_token" {
-  description = "API token with Account:Cloudflare Tunnel:Edit, Account:Access:Apps and Policies:Edit, Zone:DNS:Edit, and Zone:WAF:Edit (for the SSH rate-limit ruleset) permissions. Enter it at the masked interactive prompt only — never in a .tfvars file or as an env var (see infra/README.md)."
+  description = "API token with Account:Cloudflare Tunnel:Edit, Account:Access:Apps and Policies:Edit, and Zone:DNS:Edit permissions. Enter it at the masked interactive prompt only — never in a .tfvars file or as an env var (see infra/README.md)."
   type        = string
   sensitive   = true
 }

@@ -35,20 +35,34 @@ and paste the output into Settings → Secrets and variables → Actions →
 
 ## Terraform
 
-`warp-pi-access/` manages the Cloudflare side: DNS records for `.io`
-(`web`/`ssh`/`www`/apex — all CNAMEs to the "BTFW" tunnel; the tunnel
-itself isn't Terraform-managed, we don't have its original secret — plus
-a null MX on the apex, RFC 7505, declaring it takes no mail), the
-tunnel's ingress config (which also includes the apex/`www` hostnames for
-`.me`, `.org`, `.app`, `.co.uk`, `.info`, and `.uk`, since tunnel ingress
-is an account-level resource, not tied to a single zone), and the SSH
-rate-limiting ruleset.
+Two separate Terraform projects, same R2 state bucket, different keys,
+different API tokens — deliberately not one project, so the Pi-specific
+stuff stays small and independently applicable.
 
-`.me`, `.org`, `.app`, `.co.uk`, `.info`, and `.uk`'s actual DNS records
-live in **separate Cloudflare zones** this project doesn't hold
-`zone_id`s for, so they're dashboard-managed, not Terraform — same as
-before. If any of them ever diverges from `.io` in how it's routed, check
-the dashboard for that zone, not just this Terraform config.
+`warp-pi-access/` is the original, Pi-specific project: the tunnel's
+ingress config (every hostname routed through it, across all 7 domains —
+tunnel ingress is account-level, not tied to a zone), `.io`'s 5 tunnel
+CNAME/MX DNS records (`web`/`ssh`/`www`/apex, plus a null MX, RFC 7505),
+and the browser-SSH console's Access application/policy/certificate. It
+also declares `warp_routing = { enabled = true }` on the tunnel config —
+not something this project turned on, just something that has to stay
+declared so a plain `apply` here doesn't silently disable it.
+
+`cloudflare/` is broader: the rest of the DNS across all 7 zones (SPF/
+DMARC/DKIM/Google-verification TXT records, and the other 6 domains'
+tunnel CNAMEs), zone-level settings (TLS, HSTS, DNSSEC, bot management)
+for all 7 zones, WAF/rate-limiting/security-header rulesets for all 7
+zones, the Members Area and SSH-`.io` Access apps, and tunnel health
+notifications. It was brought in as a bulk `import` of what had been
+dashboard-only config — see its own README for exactly what it does and
+doesn't cover, and why a few resources are deliberately left out (they're
+`warp-pi-access`'s).
+
+Both projects hold all 7 zones' `zone_id`s now (`cloudflare/locals.tf`),
+so "dashboard-managed, not Terraform" no longer applies to any of this —
+if a zone's config ever looks like it's drifted from what either project
+declares, that's real drift (someone changed it by hand), not an
+intentionally-unmanaged setting.
 
 State lives in a Cloudflare R2 bucket (`beyondthefirewall-tfstate`, S3-compatible
 backend), not GCS — GCP is no longer used for anything in this repo. Auth for
@@ -57,7 +71,8 @@ supplied via the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` environment
 variables in your shell before running `terraform init`/`plan`/`apply` — never
 committed to a file, and never the same credential as `cloudflare_api_token`
 (that one's a regular Cloudflare API token for the `cloudflare` provider; this
-one's a separate R2-scoped S3 credential for the backend).
+one's a separate R2-scoped S3 credential for the backend, shared by both
+projects).
 
 Run `terraform apply` from `infra/warp-pi-access/` — it'll prompt for
 `cloudflare_account_id`, `cloudflare_api_token` (paste at the masked
