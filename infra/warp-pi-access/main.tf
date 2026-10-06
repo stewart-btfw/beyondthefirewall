@@ -103,9 +103,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "pi" {
 # That means a matching Unix account is required on the Pi per allowed
 # email (see infra/README.md) — there's no single shared account here.
 resource "cloudflare_zero_trust_access_policy" "console_ssh_allow" {
-  account_id = var.cloudflare_account_id
-  name       = "Console SSH — allowed members"
-  decision   = "allow"
+  account_id       = var.cloudflare_account_id
+  name             = "Console SSH — allowed members"
+  decision         = "allow"
+  session_duration = "8h"
 
   include = [for e in var.console_allowed_emails : { email = { email = e } }]
 }
@@ -213,3 +214,17 @@ resource "cloudflare_dns_record" "pi_ssh" {
 # 6 domains — the live rule had already grown beyond "just SSH" (it also
 # covers /members.html) before this move, so it fit the website-wide
 # project better than this Pi-specific one.
+#
+# `removed` (not a plain deletion) so this project drops it from its own
+# state without calling destroy on the live object — infra/cloudflare
+# already imported that same ruleset ID as ratelimit["io"], so an actual
+# destroy here would briefly drop live rate limiting until re-applied
+# there. This block can be deleted once this project's state no longer
+# has the resource (i.e. after the first apply following this change).
+removed {
+  from = cloudflare_ruleset.ssh_rate_limit
+
+  lifecycle {
+    destroy = false
+  }
+}
