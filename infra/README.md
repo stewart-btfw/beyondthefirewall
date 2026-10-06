@@ -41,6 +41,10 @@ token expires a year after creation —
 `terraform output deploy_service_token_expires_at` — so rotate it
 (`terraform apply -replace=cloudflare_zero_trust_access_service_token.deploy`,
 then update both secrets) before then.
+`.github/workflows/deploy-token-expiry-check.yml` alerts (a failing
+scheduled run, same pattern as `uptime-check.yml`) once it's within 30
+days of expiring — its `EXPIRES_AT` is a hand-copied value, so update it
+in the same PR as any rotation.
 
 ### Your own SSH
 
