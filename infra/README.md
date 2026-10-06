@@ -62,7 +62,11 @@ write down).
 
 Cloudflare Access can render an SSH terminal directly in the browser —
 no backend of ours involved, Cloudflare does it — gated by the same kind
-of email-allowlist Access policy as `members.html`. It's on its own
+of email-allowlist Access policy as `members.html` (dashboard-built and
+dashboard-managed, not Terraform: the "Members Area" self-hosted
+application and its "Members Area" policy, gating `/members.html` across
+all 7 domains — check those by name in Zero Trust > Access if you ever
+need to touch that allowlist). It's on its own
 hostname (`console_hostname`) rather than `ssh.beyondthefirewall.io`,
 so it doesn't touch the key-only SSH access that already works today.
 
@@ -102,28 +106,28 @@ Three things it can't do, left for a human:
 
 ## GCP
 
-The member/login area and Firebase Authentication have been removed
-entirely (Node app deleted, DNS/WAF rules for `/members/*` cleaned up —
-see git history around the removal commit for what changed). The
-`beyondthefirewall` GCP project is no longer used for the live site at
-all; the only things left in it are:
-
-- The `beyondthefirewall-tfstate` GCS bucket (fractions of a cent/month,
-  unrelated to hosting — just where this Terraform project's state lives)
-- The `infra/prisma-mtls/` demo (Prisma Access Browser client-cert
-  gating), separately queued for teardown — see that Terraform's own
-  state/comments
-
+The `beyondthefirewall` GCP project has been fully shut down and
+deleted — nothing of this repo's hosting or infrastructure depends on
+GCP anymore, and hasn't since the member/login area and Firebase
+Authentication were removed (Node app deleted, DNS/WAF rules for
+`/members/*` cleaned up — see git history around the removal commit).
 `members-backend@beyondthefirewall.iam.gserviceaccount.com` and its key
-on the Pi are no longer used and can be deleted/revoked next time GCP
-access is available.
+on the Pi went with the project.
+
+The `infra/prisma-mtls/` demo (mTLS client-cert gating via Prisma Access
+Browser, fronting a dedicated Cloud Run service) is gone entirely —
+both its GCP half and its Cloudflare half (the mTLS certificate upload,
+hostname-certificate association, and Access policy/application it
+created) were already cleaned up by the time the GCP project was
+deleted, confirmed directly in the dashboard (no matching Access
+application, policy, or mTLS certificate remain). The directory itself
+has been deleted from this repo — there's nothing left to track.
 
 Everything else — `web-01`, the old `members.beyondthefirewall.me` load
 balancer stack, the `members-backend` Cloud Run service, the
 `github-actions-deploy` service account and its Workload Identity
 Federation setup, the `proxy-shared-secret` Secret Manager secret — was
-torn down when this moved to the Pi. If you see any of those names again
-in GCP, something didn't get cleaned up.
+torn down when this moved to the Pi, well before the project deletion.
 
 ## Security headers, HSTS, DNSSEC, SPF/DKIM/DMARC
 

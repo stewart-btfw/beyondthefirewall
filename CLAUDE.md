@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 The full stack for `beyondthefirewall.{io,me,org,app,co.uk,info,uk}`: a static
-marketing site and the Terraform that manages Cloudflare/GCP around it.
+marketing site and the Terraform that manages Cloudflare around it.
 There is no build system tying these together — each top-level piece
 deploys independently.
 
@@ -22,8 +22,10 @@ current by whoever maintains this repo.
 
 ## Repo layout
 
-- `index.html`, `style.css`, `*.svg`, `robots.txt`, `sitemap.xml`, `waiting.gif`
-  — the public marketing site. No build step; these files are served as-is.
+- `index.html`, `members.html`, `style.css`, `diag.js`, `*.svg`, `robots.txt`,
+  `sitemap.xml`, `waiting.gif` — the public marketing site plus the
+  Access-gated members page and its client-side connection diagnostics. No
+  build step; these files are served as-is.
 - `infra/` — Terraform, split by concern (see below).
 - `.github/workflows/` — the deploy/monitoring pipelines.
 
@@ -31,16 +33,16 @@ current by whoever maintains this repo.
 
 There is no root `package.json`, and no test suite anywhere in this repo.
 
-**Terraform** (`cd infra/warp-pi-access` or `cd infra/prisma-mtls/{cloudflare,gcp}`):
+**Terraform** (`cd infra/warp-pi-access`):
 ```
 terraform init
 terraform plan
 terraform apply
 ```
-`warp-pi-access` state is remote (GCS bucket `beyondthefirewall-tfstate`);
-the other two directories have no backend block configured. Never put
-`cloudflare_api_token` in a `.tfvars` file or env var — enter it at the
-masked interactive prompt only (see `infra/README.md` for why).
+State is remote (Cloudflare R2 bucket `beyondthefirewall-tfstate`,
+S3-compatible backend). Never put `cloudflare_api_token` in a `.tfvars`
+file or env var — enter it at the masked interactive prompt only (see
+`infra/README.md` for why).
 
 ## Architecture
 
@@ -53,8 +55,8 @@ fixed command server-side (`git pull`) — the SSH command in the workflow
 YAML (`... true`) is just a placeholder, it has no effect on what actually
 runs.
 
-- `deploy-site.yml` triggers on changes to `index.html`, `style.css`, `*.svg`,
-  `robots.txt`, `sitemap.xml`.
+- `deploy-site.yml` triggers on changes to `index.html`, `members.html`,
+  `style.css`, `*.js`, `*.svg`, `robots.txt`, `sitemap.xml`.
 - `uptime-check.yml` runs every 15 minutes, hits both domains' homepage —
   a failing run is the only alerting in place.
 
@@ -63,19 +65,18 @@ staging environment or manual approval gate.
 
 ### Infra (`infra/`)
 
-- `warp-pi-access/` — the real, deployed infra: Cloudflare Tunnel ingress
-  routing all seven domains to the Pi, DNS records, and edge-side SSH
-  rate-limiting (fail2ban can't work here since Cloudflare Tunnel makes
-  every SSH connection appear to come from 127.0.0.1). GCS remote state.
-- `prisma-mtls/` — a separate, isolated demo/prototype (mTLS client-cert
-  gating via Prisma Access Browser) fronting its own dedicated Cloud Run
-  service (`members-backend-demo`) at `members.beyondthefirewall.me`,
-  unrelated to anything else in this repo. Has both a `cloudflare/` and a
-  `gcp/` half that must be applied together (GCP owns the mTLS-terminating
-  load balancer + managed cert; Cloudflare owns the matching CA upload +
-  non-identity Access policy). No remote state backend configured for
-  either half. Currently queued for teardown — see the GCP section of
-  `infra/README.md`.
+`warp-pi-access/` is the only Terraform project in this repo: Cloudflare
+Tunnel ingress routing all seven domains to the Pi, DNS records, a
+browser-SSH console gated by Cloudflare Access, and edge-side SSH
+rate-limiting (fail2ban can't work here since Cloudflare Tunnel makes
+every SSH connection appear to come from 127.0.0.1). R2 remote state.
+
+(A former `prisma-mtls/` demo — mTLS client-cert gating via Prisma
+Access Browser, fronting its own Cloud Run service — used to live here
+too. Both its GCP and Cloudflare halves were torn down and the directory
+deleted once the `beyondthefirewall` GCP project itself was shut down;
+see the GCP section of `infra/README.md` if this ever comes up in git
+history.)
 
 Only `.io`'s DNS is Terraform-managed here (`cloudflare_zone_id` in
 `warp-pi-access` is always `.io`'s zone). The other six domains' DNS records
