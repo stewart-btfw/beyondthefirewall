@@ -53,7 +53,7 @@ variable "web_port" {
 variable "extra_site_domains" {
   description = "Apex domains (besides .io) whose apex and www hostnames are routed to the Pi's website via tunnel ingress. Their DNS lives in separate Cloudflare zones and is dashboard-managed, not Terraform — this only controls tunnel ingress, which is account-level."
   type        = list(string)
-  default     = [
+  default = [
     "beyondthefirewall.me",
     "beyondthefirewall.org",
     "beyondthefirewall.app",
